@@ -1,0 +1,15 @@
+{
+    "datacenter": "dev",
+    "disable_remote_exec": true,
+    "disable_update_check": true,
+    "dns_config": {
+        "service_ttl": {
+            "*": "30s"
+        }
+    },
+    "log_level": "INFO",
+    "node_name": "dev-desktop1",
+    "rejoin_after_leave": true,
+    "server": true,
+    "ui": false
+}
