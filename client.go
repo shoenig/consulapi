@@ -23,6 +23,7 @@ const (
 )
 
 type Client interface {
+	Agent
 	Catalog
 	KV
 }
