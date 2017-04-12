@@ -14,6 +14,9 @@ import (
 	"github.com/shoenig/toolkit"
 )
 
+// mocks generated with github.com/vektra/mockery
+//go:generate mockery -name Client -case=underscore -outpkg consulapitest -output consulapitest
+
 const (
 	defaultAddress = "http://localhost:8500"
 	defaultTimeout = 10 * time.Second
