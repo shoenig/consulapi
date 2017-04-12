@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"net/url"
+	"sort"
 	"strings"
 	"time"
 
@@ -20,10 +22,11 @@ const (
 )
 
 type KV interface {
-	Keys(dc, path string) ([]string, error)
 	Get(dc, path string) (string, error)
 	Put(dc, path, value string) error
 	Delete(dc, path string) error
+	Keys(dc, path string) ([]string, error)
+	Recurse(dc, path string) ([][2]string, error)
 }
 
 type Catalog interface {
@@ -79,56 +82,87 @@ func (c *client) Datacenters() ([]string, error) {
 }
 
 func (c *client) Keys(dc, path string) ([]string, error) {
-	path = fixup("/v1/kv", path, dc)
-	return nil, nil
+	path = fixup("/v1/kv", path, [2]string{"dc", dc}, [2]string{"keys", "true"})
+	var keys []string
+	err := c.get(path, &keys)
+	sort.Strings(keys)
+	return keys, err
+}
+
+func (c *client) Recurse(dc, path string) ([][2]string, error) {
+	path = fixup("/v1/kv", path, [2]string{"dc", dc}, [2]string{"recurse", "true"})
+	var values []value
+	if err := c.get(path, &values); err != nil {
+		return nil, err
+	}
+	kvs := make([][2]string, 0, len(values))
+	for _, value := range values {
+		decoded, err := base64.StdEncoding.DecodeString(value.Value)
+		if err != nil {
+			return nil, err
+		}
+		kvs = append(kvs, [2]string{
+			value.Key,
+			string(decoded),
+		})
+	}
+	sort.Slice(kvs, func(i, j int) bool {
+		return kvs[i][0] < kvs[j][0]
+	})
+	return kvs, nil
 }
 
 func (c *client) Get(dc, path string) (string, error) {
-	path = fixup("/v1/kv", path, dc)
+	path = fixup("/v1/kv", path, [2]string{"dc", dc})
 
-	var keys []key
-	if err := c.get(path, &keys); err != nil {
+	var values []value
+	if err := c.get(path, &values); err != nil {
 		return "", err
 	}
-	if len(keys) == 0 {
+	if len(values) == 0 {
 		return "", errors.Errorf("key %q does not exist", path)
 	}
 
-	bs, err := base64.StdEncoding.DecodeString(keys[0].Value)
+	bs, err := base64.StdEncoding.DecodeString(values[0].Value)
 	return string(bs), err
 }
 
 func (c *client) Put(dc, path, value string) error {
-	path = fixup("/v1/kv", path, dc)
+	path = fixup("/v1/kv", path, [2]string{"dc", dc})
 	return c.put(path, value)
 }
 
 func (c *client) Delete(dc, path string) error {
-	path = fixup("/v1/kv", path, dc)
+	path = fixup("/v1/kv", path, [2]string{"dc", dc})
 	return c.delete(path)
 }
 
 // params are url param kv pairs
-func fixup(prefix, path string, params ...string) string {
+func fixup(prefix, path string, params ...[2]string) string {
 	if !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	}
 
-	// first param gets a ?
-	if len(params) > 0 {
-		path = path + "?" + params[0]
+	values := make(url.Values)
 
-		// next params get &'s
-		for _, param := range params[1:] {
-			path = path + "&" + param
+	for _, param := range params {
+		if param[1] != "" {
+			values.Set(param[0], param[1])
 		}
 	}
 
-	// there is probably a better way to build url paths
-	return prefix + path
+	query := values.Encode()
+
+	// there is probably a better way to build url queries
+	url := prefix + path
+	if len(query) > 0 {
+		url += "?" + query
+	}
+	return url
 }
 
-type key struct {
+type value struct {
+	Key   string `json:"Key"`
 	Value string `json:"Value"`
 }
 
