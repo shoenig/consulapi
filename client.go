@@ -69,7 +69,7 @@ func fixup(prefix, path string, params ...[2]string) string {
 
 	for _, param := range params {
 		if param[1] != "" {
-			values.Set(param[0], param[1])
+			values.Add(param[0], param[1])
 		}
 	}
 

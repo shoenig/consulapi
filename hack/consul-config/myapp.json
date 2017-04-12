@@ -1,0 +1,17 @@
+{
+    "service": {
+        "checks": [
+            {
+                "interval": "10s",
+                "script": "/bin/true"
+            }
+        ],
+        "id": "myapp",
+        "name": "myapp",
+        "port": 29019,
+        "tags": [
+		"myapp-tag1",
+		"myapp-tag2"
+        ]
+    }
+}
