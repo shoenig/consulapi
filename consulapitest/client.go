@@ -89,6 +89,43 @@ func (_m *Client) Keys(dc string, path string) ([]string, error) {
 	return r0, r1
 }
 
+// MaintenanceMode provides a mock function with given fields: enabled, reason
+func (_m *Client) MaintenanceMode(enabled bool, reason string) error {
+	ret := _m.Called(enabled, reason)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(bool, string) error); ok {
+		r0 = rf(enabled, reason)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Members provides a mock function with given fields: wan
+func (_m *Client) Members(wan bool) ([]consulapi.AgentInfo, error) {
+	ret := _m.Called(wan)
+
+	var r0 []consulapi.AgentInfo
+	if rf, ok := ret.Get(0).(func(bool) []consulapi.AgentInfo); ok {
+		r0 = rf(wan)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]consulapi.AgentInfo)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(bool) error); ok {
+		r1 = rf(wan)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Node provides a mock function with given fields: dc, name
 func (_m *Client) Node(dc string, name string) (consulapi.NodeInfo, error) {
 	ret := _m.Called(dc, name)
@@ -168,6 +205,20 @@ func (_m *Client) Recurse(dc string, path string) ([][2]string, error) {
 	}
 
 	return r0, r1
+}
+
+// Reload provides a mock function with given fields:
+func (_m *Client) Reload() error {
+	ret := _m.Called()
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // Service provides a mock function with given fields: dc, service, tags
