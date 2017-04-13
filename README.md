@@ -35,3 +35,22 @@ client := consulapi.New(options)
 members, err := client.Members()
 // etc ...
 ```
+
+### Design
+A few factors contribute to the simplicity of consulapi. 
+
+First, we export interfaces instead of concrete implementations.
+This enabled both re-implementations if necessary, as well enables
+the use of mocks in testing. A mock implementation of the `Client`
+interface is automatically generated and provided in the 
+[consulapitest](https://github.com/shoenig/consulapi/consulapitest)
+package.
+
+Second, the nature of the key-value store is significantly limited.
+`consulapi` enforces a strongly opinionated design that all keys
+and values must be strings, and that all keys may only be `/`
+separated. This cuts down on a lot of type casting overhead.
+
+Third, the source code itself is intended to be easy to read and
+understand. It is centered around common http method calls, with
+the intent of being a reduced reflection of the HTTP API.
