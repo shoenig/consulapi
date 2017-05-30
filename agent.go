@@ -34,6 +34,7 @@ func (c *client) Reload() error {
 	path := fixup("/v1/agent", "/reload")
 	return c.put(path, "")
 }
+
 func (c *client) MaintenanceMode(enabled bool, reason string) error {
 	enableS := strconv.FormatBool(enabled)
 	path := fixup("/v1/agent", "/maintenance", [2]string{"enable", enableS}, [2]string{"reason", reason})

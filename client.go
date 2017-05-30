@@ -18,8 +18,9 @@ import (
 //go:generate mockery -name Client -case=underscore -outpkg consulapitest -output consulapitest
 
 const (
-	defaultAddress = "http://localhost:8500"
-	defaultTimeout = 10 * time.Second
+	defaultAddress    = "http://localhost:8500"
+	defaultTimeout    = 10 * time.Second
+	consulTokenHeader = "X-Consul-Token"
 )
 
 type Client interface {
@@ -32,6 +33,7 @@ type ClientOptions struct {
 	Address             string
 	HTTPTimeout         time.Duration
 	SkipTLSVerification bool
+	Token               string
 }
 
 func New(opts ClientOptions) Client {
@@ -89,7 +91,15 @@ func fixup(prefix, path string, params ...[2]string) string {
 
 func (c *client) get(path string, i interface{}) error {
 	url := c.opts.Address + path
-	response, err := c.httpClient.Get(url)
+
+	request, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+
+	c.maybeSetToken(request)
+
+	response, err := c.httpClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -110,6 +120,8 @@ func (c *client) put(path, body string) error {
 		return err
 	}
 
+	c.maybeSetToken(request)
+
 	response, err := c.httpClient.Do(request)
 	if err != nil {
 		return err
@@ -124,10 +136,13 @@ func (c *client) put(path, body string) error {
 
 func (c *client) delete(path string) error {
 	url := c.opts.Address + path
+
 	request, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return err
 	}
+
+	c.maybeSetToken(request)
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
@@ -139,4 +154,10 @@ func (c *client) delete(path string) error {
 		return errors.Errorf("bad status code: %d", response.StatusCode)
 	}
 	return nil
+}
+
+func (c *client) maybeSetToken(request *http.Request) {
+	if c.opts.Token != "" {
+		request.Header.Set(consulTokenHeader, c.opts.Token)
+	}
 }
