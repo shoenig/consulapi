@@ -5,7 +5,7 @@ package consulapi
 import (
 	"testing"
 
-	"indeed/gophers/3rdparty/p/github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_Client_Agent(t *testing.T) {
