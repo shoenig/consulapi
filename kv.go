@@ -9,11 +9,32 @@ import (
 	"github.com/pkg/errors"
 )
 
+// A KV represents the key-value store built into consul.
+//
+// Although consul supports arbitrary bytes as keys and values,
+// this library assumes all keys and values are strings. This
+// helps simplify code for clients, the 99% use case for which
+// is reading and writing small configuration values and other
+// string-y information.
+//
+// Each method allows for specifying a particular dc from which
+// to set or retrieve information. If left unset, the dc defaults
+// to the dc associated with the consul agent being communicated
+// with.
 type KV interface {
+	// Get will return the value defined at path, for dc.
 	Get(dc, path string) (string, error)
+	// Put will set value at path, in dc.
 	Put(dc, path, value string) error
+	// Delete will remove the value at path, in dc.
 	Delete(dc, path string) error
+	// Keys will list all subpaths in asciibetical order.
+	// The returned paths may be terminal (ie, the value is
+	// stored content) or they may be further traversable like
+	// a directory listing, in dc.
 	Keys(dc, path string) ([]string, error)
+	// Recurse will recursively descend through path, collecting
+	// all KV pairs along the way, in dc.
 	Recurse(dc, path string) ([][2]string, error)
 }
 

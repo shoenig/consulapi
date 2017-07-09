@@ -23,25 +23,48 @@ const (
 	consulTokenHeader = "X-Consul-Token"
 )
 
+// A Client is used to communicate with consul. The interface is composed of
+// other interfaces, which reflect the different categories of API supported by
+// the consul agent.
 type Client interface {
 	Agent
 	Catalog
 	KV
 }
 
+// ClientOptions are used to configure options of a client upon creation.
 type ClientOptions struct {
-	Address             string
-	HTTPTimeout         time.Duration
+	// Address of the consul agent to communicate with. This value will
+	// default to http://localhost:8500 if left unset. This is likely
+	// the desired value, as consul is designed to run with an agent on
+	// every node.
+	Address string
+
+	// HTTPTimeout configures how long underlying HTTP requests should wait
+	// before giving up and returning a timeout error. By default, this value
+	// is 10 seconds.
+	HTTPTimeout time.Duration
+
+	// SkipTLSVerification configures the underlying HTTP client to ignore
+	// any TLS certificate validation errors. This is a hacky option that can
+	// be useful for working in environments that are using self-signed
+	// certificates. For best security practices, this option should never
+	// be used in a production environment.
 	SkipTLSVerification bool
-	Token               string
+
+	// If consul is configured to authenticate requests with a token,
+	// set the value of that token here.
+	Token string
 }
 
+// New creates a new Client that will connect to the configured consul
+// agent.
 func New(opts ClientOptions) Client {
 	if opts.Address == "" {
 		opts.Address = defaultAddress
 	}
 
-	if opts.HTTPTimeout == 0 {
+	if opts.HTTPTimeout <= 0 {
 		opts.HTTPTimeout = defaultTimeout
 	}
 

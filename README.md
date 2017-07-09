@@ -1,6 +1,10 @@
 consulapi
 =========
 
+A consul client for the rest of us.
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/shoenig/consulapi)](https://goreportcard.com/report/github.com/shoenig/consulapi) [![Build Status](https://travis-ci.org/shoenig/consulapi.svg?branch=master)](https://travis-ci.org/shoenig/consulapi) [![GoDoc](https://godoc.org/github.com/shoenig/consulapi?status.svg)](https://godoc.org/github.com/shoenig/consulapi) [![License](https://img.shields.io/github/license/shoenig/consulapi.svg?style=flat-square)](LICENSE)
+
 ### About
 [consulapi](https://github.com/shoenig/consulapi) is a consul
 client library for Go programs, targeted at the "99% use case".

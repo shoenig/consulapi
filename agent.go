@@ -4,12 +4,16 @@ package consulapi
 
 import "strconv"
 
+// Agent provides an interface to information about the
+// consul agent that is being communicated with.
 type Agent interface {
 	Members(wan bool) ([]AgentInfo, error)
 	Reload() error
 	MaintenanceMode(enabled bool, reason string) error
 }
 
+// An AgentInfo contains information about a particular
+// consul agent.
 type AgentInfo struct {
 	Name    string            `json:"Name"`
 	Address string            `json:"Addr"`
