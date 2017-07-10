@@ -57,6 +57,16 @@ type ClientOptions struct {
 	Token string
 }
 
+// HTTPError exposes the status code of a http request error
+type HTTPError struct {
+	error
+	statusCode int
+}
+
+func (h *HTTPError) StatusCode() int {
+	return h.statusCode
+}
+
 // New creates a new Client that will connect to the configured consul
 // agent.
 func New(opts ClientOptions) Client {
@@ -129,7 +139,7 @@ func (c *client) get(path string, i interface{}) error {
 	defer toolkit.Drain(response.Body)
 
 	if response.StatusCode >= 400 {
-		return errors.Errorf("bad status code: %d", response.StatusCode)
+		return HTTPError{error: errors.Errorf("bad status code: %d", response.StatusCode), statusCode: response.StatusCode}
 	}
 
 	return json.NewDecoder(response.Body).Decode(i)
@@ -152,7 +162,7 @@ func (c *client) put(path, body string) error {
 	// do not read response
 
 	if response.StatusCode >= 400 {
-		return errors.Errorf("bad status code: %d", response.StatusCode)
+		return HTTPError{error: errors.Errorf("bad status code: %d", response.StatusCode), statusCode: response.StatusCode}
 	}
 	return nil
 }
@@ -174,7 +184,7 @@ func (c *client) delete(path string) error {
 	// do not read response
 
 	if response.StatusCode >= 400 {
-		return errors.Errorf("bad status code: %d", response.StatusCode)
+		return HTTPError{error: errors.Errorf("bad status code: %d", response.StatusCode), statusCode: response.StatusCode}
 	}
 	return nil
 }

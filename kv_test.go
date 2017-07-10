@@ -51,4 +51,10 @@ func Test_Client_KV(t *testing.T) {
 
 	require.Equal(t, "other/t3", all[0][0])
 	require.Equal(t, "value3", all[0][1])
+
+	_, err = client.Get("", "/test/random_path_to_force_404")
+	require.NotNil(t, err)
+	httperror, ok := err.(HTTPError)
+	require.True(t, ok, "Error must be HTTPError")
+	require.Equal(t, 404, httperror.StatusCode())
 }
