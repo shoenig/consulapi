@@ -5,12 +5,12 @@ package consulapi
 import (
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/shoenig/toolkit"
 )
 
@@ -57,13 +57,16 @@ type ClientOptions struct {
 	Token string
 }
 
-// HTTPError exposes the status code of a http request error
-type HTTPError struct {
-	error
+// RequestError exposes the status code of a http request error
+type RequestError struct {
 	statusCode int
 }
 
-func (h *HTTPError) StatusCode() int {
+func (h *RequestError) Error() string {
+	return fmt.Sprintf("bad status code: %d", h.statusCode)
+}
+
+func (h *RequestError) StatusCode() int {
 	return h.statusCode
 }
 
@@ -139,7 +142,7 @@ func (c *client) get(path string, i interface{}) error {
 	defer toolkit.Drain(response.Body)
 
 	if response.StatusCode >= 400 {
-		return HTTPError{error: errors.Errorf("bad status code: %d", response.StatusCode), statusCode: response.StatusCode}
+		return &RequestError{statusCode: response.StatusCode}
 	}
 
 	return json.NewDecoder(response.Body).Decode(i)
@@ -162,7 +165,7 @@ func (c *client) put(path, body string) error {
 	// do not read response
 
 	if response.StatusCode >= 400 {
-		return HTTPError{error: errors.Errorf("bad status code: %d", response.StatusCode), statusCode: response.StatusCode}
+		return &RequestError{statusCode: response.StatusCode}
 	}
 	return nil
 }
@@ -184,7 +187,7 @@ func (c *client) delete(path string) error {
 	// do not read response
 
 	if response.StatusCode >= 400 {
-		return HTTPError{error: errors.Errorf("bad status code: %d", response.StatusCode), statusCode: response.StatusCode}
+		return &RequestError{statusCode: response.StatusCode}
 	}
 	return nil
 }

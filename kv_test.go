@@ -54,7 +54,7 @@ func Test_Client_KV(t *testing.T) {
 
 	_, err = client.Get("", "/test/random_path_to_force_404")
 	require.NotNil(t, err)
-	httperror, ok := err.(HTTPError)
-	require.True(t, ok, "Error must be HTTPError")
-	require.Equal(t, 404, httperror.StatusCode())
+	requestError, ok := err.(*RequestError)
+	require.True(t, ok, "Error must be RequestError")
+	require.Equal(t, 404, requestError.StatusCode())
 }
