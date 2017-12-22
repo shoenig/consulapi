@@ -3,7 +3,7 @@
         "checks": [
             {
                 "interval": "10s",
-                "script": "/bin/true"
+                "args": ["/bin/true"]
             }
         ],
         "id": "otherapp2",

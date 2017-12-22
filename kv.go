@@ -91,7 +91,7 @@ func (c *client) Get(dc, path string) (string, error) {
 
 func (c *client) Put(dc, path, value string) error {
 	path = fixup("/v1/kv", path, [2]string{"dc", dc})
-	return c.put(path, value)
+	return c.put(path, value, nil)
 }
 
 func (c *client) Delete(dc, path string) error {

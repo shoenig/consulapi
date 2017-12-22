@@ -12,6 +12,12 @@ func Test_Client_Agent(t *testing.T) {
 	client := New(ClientOptions{})
 	defer cleanup(t, client)
 
+	self, err := client.Self()
+	require.NoError(t, err)
+	require.Equal(t, "dev-desktop1", self.Name)
+	require.Equal(t, "127.0.0.1", self.Address)
+	require.Equal(t, "dev", self.Tags["dc"])
+
 	lanMembers, err := client.Members(false)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(lanMembers))

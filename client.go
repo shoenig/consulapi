@@ -6,6 +6,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,8 +16,7 @@ import (
 	"github.com/shoenig/toolkit"
 )
 
-// mocks generated with github.com/vektra/mockery
-//go:generate mockery -name Client -case=underscore -outpkg consulapitest -output consulapitest
+//go:generate mockery -interface Client -package consulapitest
 
 const (
 	defaultAddress    = "http://localhost:8500"
@@ -30,18 +31,20 @@ type Client interface {
 	Agent
 	Catalog
 	KV
+	Session
+	Candidate
 }
 
 // ClientOptions are used to configure options of a client upon creation.
 type ClientOptions struct {
-	// Address of the consul agent to communicate with. This value will
-	// default to http://localhost:8500 if left unset. This is likely
+	// Address (optional) of the consul agent to communicate with. This value
+	// will default to http://localhost:8500 if left unset. This is likely
 	// the desired value, as consul is designed to run with an agent on
 	// every node.
 	Address string
 
-	// HTTPTimeout configures how long underlying HTTP requests should wait
-	// before giving up and returning a timeout error. By default, this value
+	// HTTPTimeout (optional) configures how long underlying HTTP requests should
+	// wait before giving up and returning a timeout error. By default, this value
 	// is 10 seconds.
 	HTTPTimeout time.Duration
 
@@ -52,9 +55,13 @@ type ClientOptions struct {
 	// be used in a production environment.
 	SkipTLSVerification bool
 
-	// If consul is configured to authenticate requests with a token,
-	// set the value of that token here.
+	// Token (optional) will be used to authenticate requests to consul.
 	Token string
+
+	// Logger may be optionally configured as an output for trace level logging
+	// produced internally by the Client. This can be helpful for debugging logic
+	// errors in client code.
+	Logger *log.Logger
 }
 
 // RequestError exposes the status code of a http request error
@@ -81,6 +88,10 @@ func New(opts ClientOptions) Client {
 		opts.HTTPTimeout = defaultTimeout
 	}
 
+	if opts.Logger == nil {
+		opts.Logger = log.New(ioutil.Discard, "", 0)
+	}
+
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: opts.SkipTLSVerification,
@@ -103,12 +114,10 @@ type client struct {
 
 // params are url param kv pairs
 func fixup(prefix, path string, params ...[2]string) string {
-	if !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	}
+	prefix = strings.TrimSuffix(prefix, "/")
+	path = strings.TrimPrefix(path, "/")
 
 	values := make(url.Values)
-
 	for _, param := range params {
 		if param[1] != "" {
 			values.Add(param[0], param[1])
@@ -117,18 +126,22 @@ func fixup(prefix, path string, params ...[2]string) string {
 
 	query := values.Encode()
 
-	// there is probably a better way to build url queries
-	url := prefix + path
+	// there is a better way to build url queries
+	completeURL := prefix + "/" + path
 	if len(query) > 0 {
-		url += "?" + query
+		completeURL += "?" + query
 	}
-	return url
+	return completeURL
+}
+
+func param(key, value string) [2]string {
+	return [2]string{key, value}
 }
 
 func (c *client) get(path string, i interface{}) error {
-	url := c.opts.Address + path
+	completeURL := c.opts.Address + path
 
-	request, err := http.NewRequest(http.MethodGet, url, nil)
+	request, err := http.NewRequest(http.MethodGet, completeURL, nil)
 	if err != nil {
 		return err
 	}
@@ -148,10 +161,10 @@ func (c *client) get(path string, i interface{}) error {
 	return json.NewDecoder(response.Body).Decode(i)
 }
 
-func (c *client) put(path, body string) error {
-	url := c.opts.Address + path
+func (c *client) put(path, body string, i interface{}) error {
+	completeURL := c.opts.Address + path
 
-	request, err := http.NewRequest(http.MethodPut, url, strings.NewReader(body))
+	request, err := http.NewRequest(http.MethodPut, completeURL, strings.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -162,18 +175,23 @@ func (c *client) put(path, body string) error {
 	if err != nil {
 		return err
 	}
-	// do not read response
 
 	if response.StatusCode >= 400 {
 		return &RequestError{statusCode: response.StatusCode}
 	}
+
+	if i != nil {
+		defer toolkit.Drain(response.Body)
+		return json.NewDecoder(response.Body).Decode(i)
+	}
+
 	return nil
 }
 
 func (c *client) delete(path string) error {
-	url := c.opts.Address + path
+	completeURL := c.opts.Address + path
 
-	request, err := http.NewRequest(http.MethodDelete, url, nil)
+	request, err := http.NewRequest(http.MethodDelete, completeURL, nil)
 	if err != nil {
 		return err
 	}

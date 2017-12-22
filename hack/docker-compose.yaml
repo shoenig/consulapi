@@ -1,12 +1,9 @@
 version: '3'
 
 services:
-  consul:
-    image: consul
+  myconsul:
+    build:
+      context: .
+      dockerfile: Dockerfile-consul
     ports:
       - "8500:8500"
-    tmpfs:
-      - /consul/data
-    volumes:
-      - ./consul-config:/consul/config
-
