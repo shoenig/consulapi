@@ -2,6 +2,7 @@
     "datacenter": "dev",
     "disable_remote_exec": true,
     "disable_update_check": true,
+    "enable_script_checks": true,
     "dns_config": {
         "service_ttl": {
             "*": "30s"
