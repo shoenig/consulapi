@@ -263,8 +263,6 @@ func (lm *leadershipManager) maintainLeadership() {
 			cancel() // probably why it returned, but we still need to run it in case
 		}
 	}
-
-	panic("there is an unrecoverable bug in consulapi")
 }
 
 func (lm *leadershipManager) IsLeader() bool {
