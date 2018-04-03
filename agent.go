@@ -8,6 +8,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+//go:generate mockery -interface Agent -package consulapitest
+
 // Agent provides an interface to information about the
 // consul agent that is being communicated with.
 type Agent interface {
@@ -63,9 +65,9 @@ func (c *client) Members(wan bool) ([]AgentInfo, error) {
 		path = fixup("/v1/agent", "/members", [2]string{"wan", wanS})
 	}
 
-	infos := make([]AgentInfo, 0, 1000)
-	err := c.get(path, &infos)
-	return infos, err
+	agentInfos := make([]AgentInfo, 0, 1000)
+	err := c.get(path, &agentInfos)
+	return agentInfos, err
 }
 
 func (c *client) Reload() error {

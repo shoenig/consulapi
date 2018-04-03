@@ -16,7 +16,7 @@ const (
 	SessionRelease SessionTerminationBehavior = "release"
 	SessionDelete  SessionTerminationBehavior = "delete"
 
-	SessionMininumTTL = 10 * time.Second
+	SessionMinimumTTL = 10 * time.Second
 	SessionMaximumTTL = 86400 * time.Second
 
 	SessionMinimumLockDelay = 0 * time.Second
@@ -70,6 +70,8 @@ type sessionConfigFormat3 struct {
 	Behavior  string  `json:"Behavior"`
 }
 
+//go:generate mockery -interface Session -package consulapitest
+
 type Session interface {
 	CreateSession(dc string, config SessionConfig) (SessionID, error)
 	DeleteSession(dc string, id SessionID) error
@@ -96,7 +98,7 @@ func internalizeSessionConfig(config SessionConfig) (sessionConfigFormat2, error
 	}
 	isc.LockDelay = config.LockDelay.String()
 
-	if (config.TTL < SessionMininumTTL) || (config.TTL > SessionMaximumTTL) {
+	if (config.TTL < SessionMinimumTTL) || (config.TTL > SessionMaximumTTL) {
 		return isc, errors.New("session ttl must be more than 10 but less than 86400 seconds")
 	}
 	isc.TTL = config.TTL.String()

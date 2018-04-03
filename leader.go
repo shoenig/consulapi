@@ -56,10 +56,14 @@ func (lc LeadershipConfig) name() string {
 // and no further action should be taken until elected leader again.
 type AsLeaderFunc func(context.Context) error
 
+//go:generate mockery -interface=Candidate -package=consulapitest
+
 // A Candidate implementation is able to Participate in leadership elections.
 type Candidate interface {
 	Participate(LeadershipConfig, AsLeaderFunc) (LeaderSession, error)
 }
+
+//go:generate mockery -interface=LeaderSession -package=consulapitest
 
 // A LeaderSession is used to inspect and manage the underlying consul session
 // being used to participate in leadership elections.

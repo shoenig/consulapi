@@ -234,6 +234,29 @@ func (mockerySelf *Client) Nodes(dc string) ([]consulapi.Node, error) {
 	return r0, r1
 }
 
+// Participate provides a mock function with given fields: mockeryArg0, mockeryArg1
+func (mockerySelf *Client) Participate(mockeryArg0 consulapi.LeadershipConfig, mockeryArg1 consulapi.AsLeaderFunc) (consulapi.LeaderSession, error) {
+	ret := mockerySelf.Called(mockeryArg0, mockeryArg1)
+
+	var r0 consulapi.LeaderSession
+	if rf, ok := ret.Get(0).(func(consulapi.LeadershipConfig, consulapi.AsLeaderFunc) consulapi.LeaderSession); ok {
+		r0 = rf(mockeryArg0, mockeryArg1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(consulapi.LeaderSession)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(consulapi.LeadershipConfig, consulapi.AsLeaderFunc) error); ok {
+		r1 = rf(mockeryArg0, mockeryArg1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Put provides a mock function with given fields: dc, path, value
 func (mockerySelf *Client) Put(dc string, path string, value string) error {
 	ret := mockerySelf.Called(dc, path, value)
@@ -320,6 +343,27 @@ func (mockerySelf *Client) RenewSession(dc string, id consulapi.SessionID) (time
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, consulapi.SessionID) error); ok {
 		r1 = rf(dc, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Self provides a mock function with given fields:
+func (mockerySelf *Client) Self() (consulapi.AgentInfo, error) {
+	ret := mockerySelf.Called()
+
+	var r0 consulapi.AgentInfo
+	if rf, ok := ret.Get(0).(func() consulapi.AgentInfo); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(consulapi.AgentInfo)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}

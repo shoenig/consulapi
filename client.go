@@ -16,13 +16,13 @@ import (
 	"github.com/shoenig/toolkit"
 )
 
-//go:generate mockery -interface Client -package consulapitest
-
 const (
 	defaultAddress    = "http://localhost:8500"
 	defaultTimeout    = 10 * time.Second
 	consulTokenHeader = "X-Consul-Token"
 )
+
+//go:generate mockery -interface Client -package consulapitest
 
 // A Client is used to communicate with consul. The interface is composed of
 // other interfaces, which reflect the different categories of API supported by

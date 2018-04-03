@@ -4,6 +4,8 @@ package consulapi
 
 import "sort"
 
+//go:generate mockery -interface Catalog -package consulapitest
+
 // A Catalog represents the consul catalog feature.
 type Catalog interface {
 	// Datacenters will return the list of datacenters that
@@ -14,7 +16,7 @@ type Catalog interface {
 	Nodes(dc string) ([]Node, error)
 
 	// Node will return detailed meta information associated
-	// a particulare node in dc.
+	// a particular node in dc.
 	Node(dc, name string) (NodeInfo, error)
 
 	// Services will return a list of names of services

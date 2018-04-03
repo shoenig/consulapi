@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+//go:generate mockery -interface KV -package consulapitest
+
 // A KV represents the key-value store built into consul.
 //
 // Although consul supports arbitrary bytes as keys and values,
