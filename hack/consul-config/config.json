@@ -12,5 +12,6 @@
     "node_name": "dev-desktop1",
     "rejoin_after_leave": true,
     "server": true,
-    "ui": false
+    "ui": false,
+    "advertise_addr": "127.0.0.1"
 }
