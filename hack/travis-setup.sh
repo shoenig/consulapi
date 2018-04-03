@@ -1,3 +1,3 @@
-curl -o /tmp/consul.zip https://releases.hashicorp.com/consul/0.8.5/consul_0.8.5_linux_amd64.zip
+curl -o /tmp/consul.zip https://releases.hashicorp.com/consul/1.0.6/consul_1.0.6_linux_amd64.zip
 unzip /tmp/consul.zip -d /tmp
 tree /tmp
