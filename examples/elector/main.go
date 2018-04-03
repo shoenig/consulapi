@@ -44,9 +44,6 @@ func main() {
 			log.Printf("--- leaderfunc context was signaled as done ---")
 			return errors.Wrap(ctx.Err(), "context is done")
 		}
-
-		log.Printf("--- leaderfunc exit before context is done ---")
-		return nil
 	}
 
 	session, err := consul.Participate(leadershipConfig, f)
