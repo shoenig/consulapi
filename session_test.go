@@ -15,7 +15,7 @@ func Test_Client_Session(t *testing.T) {
 	id1, err := client.CreateSession("", SessionConfig{
 		Node:      "dev-desktop1",
 		Name:      "my_session1",
-		TTL:       SessionMininumTTL,
+		TTL:       SessionMinimumTTL,
 		LockDelay: SessionMaximumLockDelay,
 		Behavior:  SessionDelete,
 	})
@@ -25,7 +25,7 @@ func Test_Client_Session(t *testing.T) {
 	id2, err := client.CreateSession("", SessionConfig{
 		Node:      "dev-desktop1",
 		Name:      "my_session2",
-		TTL:       SessionMininumTTL,
+		TTL:       SessionMinimumTTL,
 		LockDelay: SessionMaximumLockDelay,
 		Behavior:  SessionDelete,
 	})
