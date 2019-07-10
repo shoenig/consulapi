@@ -1,5 +1,3 @@
-// Author hoenig
-
 package consulapi
 
 import (
@@ -9,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate mockery -interface KV -package consulapitest
+//go:generate go run github.com/gojuno/minimock/cmd/minimock -g -i KV -s _mock.go
 
 // A KV represents the key-value store built into consul.
 //

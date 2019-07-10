@@ -1,9 +1,8 @@
-// Author hoenig
-
 package consulapi
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -15,7 +14,7 @@ func Test_Client_LeadershipManager(t *testing.T) {
 	defer cleanup(t, client)
 
 	f := func(context.Context) error {
-		t.Log("f was called")
+		fmt.Println("f was called")
 		return nil
 	}
 
@@ -51,9 +50,9 @@ func Test_Client_LeadershipManager_3(t *testing.T) {
 	defer cleanup(t, clients[2])
 
 	f := func(context.Context) error {
-		t.Log("leadership starting")
+		fmt.Println("leadership starting")
 		time.Sleep(1 * time.Second)
-		t.Log("leadership exiting")
+		fmt.Println("leadership exiting")
 		return nil
 	}
 
@@ -73,9 +72,9 @@ func Test_Client_LeadershipManager_3(t *testing.T) {
 
 	time.Sleep(2 * time.Second)
 
-	lm1.Abdicate()
-	lm2.Abdicate()
-	lm3.Abdicate()
+	_ = lm1.Abdicate()
+	_ = lm2.Abdicate()
+	_ = lm3.Abdicate()
 
 	time.Sleep(4 * time.Second)
 }

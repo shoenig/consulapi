@@ -1,5 +1,3 @@
-// Author hoenig
-
 package consulapi
 
 import (
@@ -22,7 +20,7 @@ const (
 	consulTokenHeader = "X-Consul-Token"
 )
 
-//go:generate mockery -interface Client -package consulapitest
+//go:generate go run github.com/gojuno/minimock/cmd/minimock -g -i Client -s _mock.go
 
 // A Client is used to communicate with consul. The interface is composed of
 // other interfaces, which reflect the different categories of API supported by
