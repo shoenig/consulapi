@@ -9,7 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/shoenig/consulapi"
+	"gophers.dev/pkgs/consulapi"
+	"gophers.dev/pkgs/loggy"
 )
 
 var name string
@@ -23,11 +24,14 @@ func main() {
 	log.Println("starting elector with name: " + name)
 
 	consul := consulapi.New(consulapi.ClientOptions{
-		Logger: log.New(os.Stdout, "<consulapi> ", log.LstdFlags),
+		Address:    "https://demo.consul.io",
+		Token:      "",
+		HTTPClient: nil,
+		Logger:     loggy.New("elector-example"),
 	})
 
 	leadershipConfig := consulapi.LeadershipConfig{
-		Key:         "service/elector/leader",
+		Key:         "service/elector-example/leader",
 		Description: "elector-leader-session",
 		LockDelay:   3 * time.Second,
 		TTL:         10 * time.Second,
@@ -44,12 +48,14 @@ func main() {
 		}
 	}
 
-	session, err := consul.Participate(leadershipConfig, f)
+	ctx := context.Background()
+
+	session, err := consul.Participate(ctx, leadershipConfig, f)
 	if err != nil {
 		panic(err)
 	}
 
-	log.Printf("[elector %s] going to idle, with session id: %s", name, session.SessionID())
+	log.Printf("[elector %s] going to idle, with session id: %s", name, session.SessionID(ctx))
 
 	for range time.Tick(2 * time.Second) {
 		showLeader(session)
@@ -57,7 +63,9 @@ func main() {
 }
 
 func showLeader(session consulapi.LeaderSession) {
-	leader, err := session.Current()
+	ctx := context.Background()
+
+	leader, err := session.Current(ctx)
 	if err != nil {
 		log.Printf("[elector %s] could not get current leader: %v", name, err)
 	} else {

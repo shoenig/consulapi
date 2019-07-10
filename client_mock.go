@@ -8,112 +8,168 @@ import (
 	"time"
 	mm_time "time"
 
-	"github.com/gojuno/minimock"
+	"github.com/gojuno/minimock/v3"
 )
 
 // ClientMock implements Client
 type ClientMock struct {
 	t minimock.Tester
 
-	funcCreateSession          func(dc string, config SessionConfig) (s1 SessionID, err error)
+	funcConnect          func(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error)
+	inspectFuncConnect   func(c1 Ctx, s1 string, s2 ServiceQuery)
+	afterConnectCounter  uint64
+	beforeConnectCounter uint64
+	ConnectMock          mClientMockConnect
+
+	funcCreateSession          func(c1 Ctx, s1 SessionConfig) (s2 SessionID, err error)
+	inspectFuncCreateSession   func(c1 Ctx, s1 SessionConfig)
 	afterCreateSessionCounter  uint64
 	beforeCreateSessionCounter uint64
 	CreateSessionMock          mClientMockCreateSession
 
-	funcDatacenters          func() (sa1 []string, err error)
-	afterDatacentersCounter  uint64
-	beforeDatacentersCounter uint64
-	DatacentersMock          mClientMockDatacenters
+	funcDataCenters          func(c1 Ctx) (sa1 []string, err error)
+	inspectFuncDataCenters   func(c1 Ctx)
+	afterDataCentersCounter  uint64
+	beforeDataCentersCounter uint64
+	DataCentersMock          mClientMockDataCenters
 
-	funcDelete          func(dc string, path string) (err error)
+	funcDelete          func(c1 Ctx, s1 string, q1 Query) (err error)
+	inspectFuncDelete   func(c1 Ctx, s1 string, q1 Query)
 	afterDeleteCounter  uint64
 	beforeDeleteCounter uint64
 	DeleteMock          mClientMockDelete
 
-	funcDeleteSession          func(dc string, id SessionID) (err error)
+	funcDeleteSession          func(c1 Ctx, s1 SessionQuery) (err error)
+	inspectFuncDeleteSession   func(c1 Ctx, s1 SessionQuery)
 	afterDeleteSessionCounter  uint64
 	beforeDeleteSessionCounter uint64
 	DeleteSessionMock          mClientMockDeleteSession
 
-	funcGet          func(dc string, path string) (s1 string, err error)
+	funcForceLeave          func(ctx Ctx, node string) (err error)
+	inspectFuncForceLeave   func(ctx Ctx, node string)
+	afterForceLeaveCounter  uint64
+	beforeForceLeaveCounter uint64
+	ForceLeaveMock          mClientMockForceLeave
+
+	funcGet          func(c1 Ctx, s1 string, q1 Query) (s2 string, err error)
+	inspectFuncGet   func(c1 Ctx, s1 string, q1 Query)
 	afterGetCounter  uint64
 	beforeGetCounter uint64
 	GetMock          mClientMockGet
 
-	funcKeys          func(dc string, path string) (sa1 []string, err error)
+	funcJoin          func(ctx Ctx, address string, wan bool) (err error)
+	inspectFuncJoin   func(ctx Ctx, address string, wan bool)
+	afterJoinCounter  uint64
+	beforeJoinCounter uint64
+	JoinMock          mClientMockJoin
+
+	funcKeys          func(c1 Ctx, s1 string, q1 Query) (sa1 []string, err error)
+	inspectFuncKeys   func(c1 Ctx, s1 string, q1 Query)
 	afterKeysCounter  uint64
 	beforeKeysCounter uint64
 	KeysMock          mClientMockKeys
 
-	funcListSessions          func(dc string, node string) (m1 map[SessionID]SessionConfig, err error)
+	funcLeave          func(ctx Ctx) (err error)
+	inspectFuncLeave   func(ctx Ctx)
+	afterLeaveCounter  uint64
+	beforeLeaveCounter uint64
+	LeaveMock          mClientMockLeave
+
+	funcListSessions          func(ctx Ctx, dc string, node string) (m1 map[SessionID]SessionConfig, err error)
+	inspectFuncListSessions   func(ctx Ctx, dc string, node string)
 	afterListSessionsCounter  uint64
 	beforeListSessionsCounter uint64
 	ListSessionsMock          mClientMockListSessions
 
-	funcMaintenanceMode          func(enabled bool, reason string) (err error)
+	funcMaintenanceMode          func(ctx Ctx, enabled bool, reason string) (err error)
+	inspectFuncMaintenanceMode   func(ctx Ctx, enabled bool, reason string)
 	afterMaintenanceModeCounter  uint64
 	beforeMaintenanceModeCounter uint64
 	MaintenanceModeMock          mClientMockMaintenanceMode
 
-	funcMembers          func(wan bool) (aa1 []AgentInfo, err error)
+	funcMembers          func(ctx Ctx, wan bool) (aa1 []AgentInfo, err error)
+	inspectFuncMembers   func(ctx Ctx, wan bool)
 	afterMembersCounter  uint64
 	beforeMembersCounter uint64
 	MembersMock          mClientMockMembers
 
-	funcNode          func(dc string, name string) (n1 NodeInfo, err error)
+	funcMetrics          func(ctx Ctx) (m1 Metrics, err error)
+	inspectFuncMetrics   func(ctx Ctx)
+	afterMetricsCounter  uint64
+	beforeMetricsCounter uint64
+	MetricsMock          mClientMockMetrics
+
+	funcNode          func(c1 Ctx, s1 string, n1 NodeQuery) (n2 NodeInfo, err error)
+	inspectFuncNode   func(c1 Ctx, s1 string, n1 NodeQuery)
 	afterNodeCounter  uint64
 	beforeNodeCounter uint64
 	NodeMock          mClientMockNode
 
-	funcNodes          func(dc string) (na1 []Node, err error)
+	funcNodes          func(c1 Ctx, n1 NodesQuery) (na1 []Node, err error)
+	inspectFuncNodes   func(c1 Ctx, n1 NodesQuery)
 	afterNodesCounter  uint64
 	beforeNodesCounter uint64
 	NodesMock          mClientMockNodes
 
-	funcParticipate          func(l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error)
+	funcParticipate          func(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error)
+	inspectFuncParticipate   func(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc)
 	afterParticipateCounter  uint64
 	beforeParticipateCounter uint64
 	ParticipateMock          mClientMockParticipate
 
-	funcPut          func(dc string, path string, value string) (err error)
+	funcPut          func(c1 Ctx, s1 string, s2 string, q1 Query) (err error)
+	inspectFuncPut   func(c1 Ctx, s1 string, s2 string, q1 Query)
 	afterPutCounter  uint64
 	beforePutCounter uint64
 	PutMock          mClientMockPut
 
-	funcReadSession          func(dc string, id SessionID) (s1 SessionConfig, err error)
+	funcReadSession          func(c1 Ctx, s1 SessionQuery) (s2 SessionConfig, err error)
+	inspectFuncReadSession   func(c1 Ctx, s1 SessionQuery)
 	afterReadSessionCounter  uint64
 	beforeReadSessionCounter uint64
 	ReadSessionMock          mClientMockReadSession
 
-	funcRecurse          func(dc string, path string) (saa1 [][2]string, err error)
+	funcRecurse          func(c1 Ctx, s1 string, q1 Query) (pa1 []Pair, err error)
+	inspectFuncRecurse   func(c1 Ctx, s1 string, q1 Query)
 	afterRecurseCounter  uint64
 	beforeRecurseCounter uint64
 	RecurseMock          mClientMockRecurse
 
-	funcReload          func() (err error)
+	funcReload          func(ctx Ctx) (err error)
+	inspectFuncReload   func(ctx Ctx)
 	afterReloadCounter  uint64
 	beforeReloadCounter uint64
 	ReloadMock          mClientMockReload
 
-	funcRenewSession          func(dc string, id SessionID) (d1 time.Duration, err error)
+	funcRenewSession          func(c1 Ctx, s1 SessionQuery) (d1 time.Duration, err error)
+	inspectFuncRenewSession   func(c1 Ctx, s1 SessionQuery)
 	afterRenewSessionCounter  uint64
 	beforeRenewSessionCounter uint64
 	RenewSessionMock          mClientMockRenewSession
 
-	funcSelf          func() (a1 AgentInfo, err error)
+	funcSelf          func(ctx Ctx) (a1 AgentInfo, err error)
+	inspectFuncSelf   func(ctx Ctx)
 	afterSelfCounter  uint64
 	beforeSelfCounter uint64
 	SelfMock          mClientMockSelf
 
-	funcService          func(dc string, service string, tags ...string) (sa1 []Service, err error)
+	funcService          func(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error)
+	inspectFuncService   func(c1 Ctx, s1 string, s2 ServiceQuery)
 	afterServiceCounter  uint64
 	beforeServiceCounter uint64
 	ServiceMock          mClientMockService
 
-	funcServices          func(dc string) (m1 map[string][]string, err error)
+	funcServices          func(c1 Ctx, s1 ServicesQuery) (m1 map[string][]string, err error)
+	inspectFuncServices   func(c1 Ctx, s1 ServicesQuery)
 	afterServicesCounter  uint64
 	beforeServicesCounter uint64
 	ServicesMock          mClientMockServices
+
+	funcSetACLToken          func(ctx Ctx, kind string, token string) (err error)
+	inspectFuncSetACLToken   func(ctx Ctx, kind string, token string)
+	afterSetACLTokenCounter  uint64
+	beforeSetACLTokenCounter uint64
+	SetACLTokenMock          mClientMockSetACLToken
 }
 
 // NewClientMock returns a mock for Client
@@ -123,10 +179,14 @@ func NewClientMock(t minimock.Tester) *ClientMock {
 		controller.RegisterMocker(m)
 	}
 
+	m.ConnectMock = mClientMockConnect{mock: m}
+	m.ConnectMock.callArgs = []*ClientMockConnectParams{}
+
 	m.CreateSessionMock = mClientMockCreateSession{mock: m}
 	m.CreateSessionMock.callArgs = []*ClientMockCreateSessionParams{}
 
-	m.DatacentersMock = mClientMockDatacenters{mock: m}
+	m.DataCentersMock = mClientMockDataCenters{mock: m}
+	m.DataCentersMock.callArgs = []*ClientMockDataCentersParams{}
 
 	m.DeleteMock = mClientMockDelete{mock: m}
 	m.DeleteMock.callArgs = []*ClientMockDeleteParams{}
@@ -134,11 +194,20 @@ func NewClientMock(t minimock.Tester) *ClientMock {
 	m.DeleteSessionMock = mClientMockDeleteSession{mock: m}
 	m.DeleteSessionMock.callArgs = []*ClientMockDeleteSessionParams{}
 
+	m.ForceLeaveMock = mClientMockForceLeave{mock: m}
+	m.ForceLeaveMock.callArgs = []*ClientMockForceLeaveParams{}
+
 	m.GetMock = mClientMockGet{mock: m}
 	m.GetMock.callArgs = []*ClientMockGetParams{}
 
+	m.JoinMock = mClientMockJoin{mock: m}
+	m.JoinMock.callArgs = []*ClientMockJoinParams{}
+
 	m.KeysMock = mClientMockKeys{mock: m}
 	m.KeysMock.callArgs = []*ClientMockKeysParams{}
+
+	m.LeaveMock = mClientMockLeave{mock: m}
+	m.LeaveMock.callArgs = []*ClientMockLeaveParams{}
 
 	m.ListSessionsMock = mClientMockListSessions{mock: m}
 	m.ListSessionsMock.callArgs = []*ClientMockListSessionsParams{}
@@ -148,6 +217,9 @@ func NewClientMock(t minimock.Tester) *ClientMock {
 
 	m.MembersMock = mClientMockMembers{mock: m}
 	m.MembersMock.callArgs = []*ClientMockMembersParams{}
+
+	m.MetricsMock = mClientMockMetrics{mock: m}
+	m.MetricsMock.callArgs = []*ClientMockMetricsParams{}
 
 	m.NodeMock = mClientMockNode{mock: m}
 	m.NodeMock.callArgs = []*ClientMockNodeParams{}
@@ -168,11 +240,13 @@ func NewClientMock(t minimock.Tester) *ClientMock {
 	m.RecurseMock.callArgs = []*ClientMockRecurseParams{}
 
 	m.ReloadMock = mClientMockReload{mock: m}
+	m.ReloadMock.callArgs = []*ClientMockReloadParams{}
 
 	m.RenewSessionMock = mClientMockRenewSession{mock: m}
 	m.RenewSessionMock.callArgs = []*ClientMockRenewSessionParams{}
 
 	m.SelfMock = mClientMockSelf{mock: m}
+	m.SelfMock.callArgs = []*ClientMockSelfParams{}
 
 	m.ServiceMock = mClientMockService{mock: m}
 	m.ServiceMock.callArgs = []*ClientMockServiceParams{}
@@ -180,7 +254,228 @@ func NewClientMock(t minimock.Tester) *ClientMock {
 	m.ServicesMock = mClientMockServices{mock: m}
 	m.ServicesMock.callArgs = []*ClientMockServicesParams{}
 
+	m.SetACLTokenMock = mClientMockSetACLToken{mock: m}
+	m.SetACLTokenMock.callArgs = []*ClientMockSetACLTokenParams{}
+
 	return m
+}
+
+type mClientMockConnect struct {
+	mock               *ClientMock
+	defaultExpectation *ClientMockConnectExpectation
+	expectations       []*ClientMockConnectExpectation
+
+	callArgs []*ClientMockConnectParams
+	mutex    sync.RWMutex
+}
+
+// ClientMockConnectExpectation specifies expectation struct of the Client.Connect
+type ClientMockConnectExpectation struct {
+	mock    *ClientMock
+	params  *ClientMockConnectParams
+	results *ClientMockConnectResults
+	Counter uint64
+}
+
+// ClientMockConnectParams contains parameters of the Client.Connect
+type ClientMockConnectParams struct {
+	c1 Ctx
+	s1 string
+	s2 ServiceQuery
+}
+
+// ClientMockConnectResults contains results of the Client.Connect
+type ClientMockConnectResults struct {
+	ia1 []Instance
+	err error
+}
+
+// Expect sets up expected params for Client.Connect
+func (mmConnect *mClientMockConnect) Expect(c1 Ctx, s1 string, s2 ServiceQuery) *mClientMockConnect {
+	if mmConnect.mock.funcConnect != nil {
+		mmConnect.mock.t.Fatalf("ClientMock.Connect mock is already set by Set")
+	}
+
+	if mmConnect.defaultExpectation == nil {
+		mmConnect.defaultExpectation = &ClientMockConnectExpectation{}
+	}
+
+	mmConnect.defaultExpectation.params = &ClientMockConnectParams{c1, s1, s2}
+	for _, e := range mmConnect.expectations {
+		if minimock.Equal(e.params, mmConnect.defaultExpectation.params) {
+			mmConnect.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmConnect.defaultExpectation.params)
+		}
+	}
+
+	return mmConnect
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Connect
+func (mmConnect *mClientMockConnect) Inspect(f func(c1 Ctx, s1 string, s2 ServiceQuery)) *mClientMockConnect {
+	if mmConnect.mock.inspectFuncConnect != nil {
+		mmConnect.mock.t.Fatalf("Inspect function is already set for ClientMock.Connect")
+	}
+
+	mmConnect.mock.inspectFuncConnect = f
+
+	return mmConnect
+}
+
+// Return sets up results that will be returned by Client.Connect
+func (mmConnect *mClientMockConnect) Return(ia1 []Instance, err error) *ClientMock {
+	if mmConnect.mock.funcConnect != nil {
+		mmConnect.mock.t.Fatalf("ClientMock.Connect mock is already set by Set")
+	}
+
+	if mmConnect.defaultExpectation == nil {
+		mmConnect.defaultExpectation = &ClientMockConnectExpectation{mock: mmConnect.mock}
+	}
+	mmConnect.defaultExpectation.results = &ClientMockConnectResults{ia1, err}
+	return mmConnect.mock
+}
+
+//Set uses given function f to mock the Client.Connect method
+func (mmConnect *mClientMockConnect) Set(f func(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error)) *ClientMock {
+	if mmConnect.defaultExpectation != nil {
+		mmConnect.mock.t.Fatalf("Default expectation is already set for the Client.Connect method")
+	}
+
+	if len(mmConnect.expectations) > 0 {
+		mmConnect.mock.t.Fatalf("Some expectations are already set for the Client.Connect method")
+	}
+
+	mmConnect.mock.funcConnect = f
+	return mmConnect.mock
+}
+
+// When sets expectation for the Client.Connect which will trigger the result defined by the following
+// Then helper
+func (mmConnect *mClientMockConnect) When(c1 Ctx, s1 string, s2 ServiceQuery) *ClientMockConnectExpectation {
+	if mmConnect.mock.funcConnect != nil {
+		mmConnect.mock.t.Fatalf("ClientMock.Connect mock is already set by Set")
+	}
+
+	expectation := &ClientMockConnectExpectation{
+		mock:   mmConnect.mock,
+		params: &ClientMockConnectParams{c1, s1, s2},
+	}
+	mmConnect.expectations = append(mmConnect.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Client.Connect return parameters for the expectation previously defined by the When method
+func (e *ClientMockConnectExpectation) Then(ia1 []Instance, err error) *ClientMock {
+	e.results = &ClientMockConnectResults{ia1, err}
+	return e.mock
+}
+
+// Connect implements Client
+func (mmConnect *ClientMock) Connect(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error) {
+	mm_atomic.AddUint64(&mmConnect.beforeConnectCounter, 1)
+	defer mm_atomic.AddUint64(&mmConnect.afterConnectCounter, 1)
+
+	if mmConnect.inspectFuncConnect != nil {
+		mmConnect.inspectFuncConnect(c1, s1, s2)
+	}
+
+	mm_params := &ClientMockConnectParams{c1, s1, s2}
+
+	// Record call args
+	mmConnect.ConnectMock.mutex.Lock()
+	mmConnect.ConnectMock.callArgs = append(mmConnect.ConnectMock.callArgs, mm_params)
+	mmConnect.ConnectMock.mutex.Unlock()
+
+	for _, e := range mmConnect.ConnectMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.ia1, e.results.err
+		}
+	}
+
+	if mmConnect.ConnectMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmConnect.ConnectMock.defaultExpectation.Counter, 1)
+		mm_want := mmConnect.ConnectMock.defaultExpectation.params
+		mm_got := ClientMockConnectParams{c1, s1, s2}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmConnect.t.Errorf("ClientMock.Connect got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmConnect.ConnectMock.defaultExpectation.results
+		if mm_results == nil {
+			mmConnect.t.Fatal("No results are set for the ClientMock.Connect")
+		}
+		return (*mm_results).ia1, (*mm_results).err
+	}
+	if mmConnect.funcConnect != nil {
+		return mmConnect.funcConnect(c1, s1, s2)
+	}
+	mmConnect.t.Fatalf("Unexpected call to ClientMock.Connect. %v %v %v", c1, s1, s2)
+	return
+}
+
+// ConnectAfterCounter returns a count of finished ClientMock.Connect invocations
+func (mmConnect *ClientMock) ConnectAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmConnect.afterConnectCounter)
+}
+
+// ConnectBeforeCounter returns a count of ClientMock.Connect invocations
+func (mmConnect *ClientMock) ConnectBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmConnect.beforeConnectCounter)
+}
+
+// Calls returns a list of arguments used in each call to ClientMock.Connect.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmConnect *mClientMockConnect) Calls() []*ClientMockConnectParams {
+	mmConnect.mutex.RLock()
+
+	argCopy := make([]*ClientMockConnectParams, len(mmConnect.callArgs))
+	copy(argCopy, mmConnect.callArgs)
+
+	mmConnect.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockConnectDone returns true if the count of the Connect invocations corresponds
+// the number of defined expectations
+func (m *ClientMock) MinimockConnectDone() bool {
+	for _, e := range m.ConnectMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.ConnectMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcConnect != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockConnectInspect logs each unmet expectation
+func (m *ClientMock) MinimockConnectInspect() {
+	for _, e := range m.ConnectMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ClientMock.Connect with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.ConnectMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
+		if m.ConnectMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ClientMock.Connect")
+		} else {
+			m.t.Errorf("Expected call to ClientMock.Connect with params: %#v", *m.ConnectMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcConnect != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
+		m.t.Error("Expected call to ClientMock.Connect")
+	}
 }
 
 type mClientMockCreateSession struct {
@@ -202,18 +497,18 @@ type ClientMockCreateSessionExpectation struct {
 
 // ClientMockCreateSessionParams contains parameters of the Client.CreateSession
 type ClientMockCreateSessionParams struct {
-	dc     string
-	config SessionConfig
+	c1 Ctx
+	s1 SessionConfig
 }
 
 // ClientMockCreateSessionResults contains results of the Client.CreateSession
 type ClientMockCreateSessionResults struct {
-	s1  SessionID
+	s2  SessionID
 	err error
 }
 
 // Expect sets up expected params for Client.CreateSession
-func (mmCreateSession *mClientMockCreateSession) Expect(dc string, config SessionConfig) *mClientMockCreateSession {
+func (mmCreateSession *mClientMockCreateSession) Expect(c1 Ctx, s1 SessionConfig) *mClientMockCreateSession {
 	if mmCreateSession.mock.funcCreateSession != nil {
 		mmCreateSession.mock.t.Fatalf("ClientMock.CreateSession mock is already set by Set")
 	}
@@ -222,7 +517,7 @@ func (mmCreateSession *mClientMockCreateSession) Expect(dc string, config Sessio
 		mmCreateSession.defaultExpectation = &ClientMockCreateSessionExpectation{}
 	}
 
-	mmCreateSession.defaultExpectation.params = &ClientMockCreateSessionParams{dc, config}
+	mmCreateSession.defaultExpectation.params = &ClientMockCreateSessionParams{c1, s1}
 	for _, e := range mmCreateSession.expectations {
 		if minimock.Equal(e.params, mmCreateSession.defaultExpectation.params) {
 			mmCreateSession.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmCreateSession.defaultExpectation.params)
@@ -232,8 +527,19 @@ func (mmCreateSession *mClientMockCreateSession) Expect(dc string, config Sessio
 	return mmCreateSession
 }
 
+// Inspect accepts an inspector function that has same arguments as the Client.CreateSession
+func (mmCreateSession *mClientMockCreateSession) Inspect(f func(c1 Ctx, s1 SessionConfig)) *mClientMockCreateSession {
+	if mmCreateSession.mock.inspectFuncCreateSession != nil {
+		mmCreateSession.mock.t.Fatalf("Inspect function is already set for ClientMock.CreateSession")
+	}
+
+	mmCreateSession.mock.inspectFuncCreateSession = f
+
+	return mmCreateSession
+}
+
 // Return sets up results that will be returned by Client.CreateSession
-func (mmCreateSession *mClientMockCreateSession) Return(s1 SessionID, err error) *ClientMock {
+func (mmCreateSession *mClientMockCreateSession) Return(s2 SessionID, err error) *ClientMock {
 	if mmCreateSession.mock.funcCreateSession != nil {
 		mmCreateSession.mock.t.Fatalf("ClientMock.CreateSession mock is already set by Set")
 	}
@@ -241,12 +547,12 @@ func (mmCreateSession *mClientMockCreateSession) Return(s1 SessionID, err error)
 	if mmCreateSession.defaultExpectation == nil {
 		mmCreateSession.defaultExpectation = &ClientMockCreateSessionExpectation{mock: mmCreateSession.mock}
 	}
-	mmCreateSession.defaultExpectation.results = &ClientMockCreateSessionResults{s1, err}
+	mmCreateSession.defaultExpectation.results = &ClientMockCreateSessionResults{s2, err}
 	return mmCreateSession.mock
 }
 
 //Set uses given function f to mock the Client.CreateSession method
-func (mmCreateSession *mClientMockCreateSession) Set(f func(dc string, config SessionConfig) (s1 SessionID, err error)) *ClientMock {
+func (mmCreateSession *mClientMockCreateSession) Set(f func(c1 Ctx, s1 SessionConfig) (s2 SessionID, err error)) *ClientMock {
 	if mmCreateSession.defaultExpectation != nil {
 		mmCreateSession.mock.t.Fatalf("Default expectation is already set for the Client.CreateSession method")
 	}
@@ -261,62 +567,66 @@ func (mmCreateSession *mClientMockCreateSession) Set(f func(dc string, config Se
 
 // When sets expectation for the Client.CreateSession which will trigger the result defined by the following
 // Then helper
-func (mmCreateSession *mClientMockCreateSession) When(dc string, config SessionConfig) *ClientMockCreateSessionExpectation {
+func (mmCreateSession *mClientMockCreateSession) When(c1 Ctx, s1 SessionConfig) *ClientMockCreateSessionExpectation {
 	if mmCreateSession.mock.funcCreateSession != nil {
 		mmCreateSession.mock.t.Fatalf("ClientMock.CreateSession mock is already set by Set")
 	}
 
 	expectation := &ClientMockCreateSessionExpectation{
 		mock:   mmCreateSession.mock,
-		params: &ClientMockCreateSessionParams{dc, config},
+		params: &ClientMockCreateSessionParams{c1, s1},
 	}
 	mmCreateSession.expectations = append(mmCreateSession.expectations, expectation)
 	return expectation
 }
 
 // Then sets up Client.CreateSession return parameters for the expectation previously defined by the When method
-func (e *ClientMockCreateSessionExpectation) Then(s1 SessionID, err error) *ClientMock {
-	e.results = &ClientMockCreateSessionResults{s1, err}
+func (e *ClientMockCreateSessionExpectation) Then(s2 SessionID, err error) *ClientMock {
+	e.results = &ClientMockCreateSessionResults{s2, err}
 	return e.mock
 }
 
 // CreateSession implements Client
-func (mmCreateSession *ClientMock) CreateSession(dc string, config SessionConfig) (s1 SessionID, err error) {
+func (mmCreateSession *ClientMock) CreateSession(c1 Ctx, s1 SessionConfig) (s2 SessionID, err error) {
 	mm_atomic.AddUint64(&mmCreateSession.beforeCreateSessionCounter, 1)
 	defer mm_atomic.AddUint64(&mmCreateSession.afterCreateSessionCounter, 1)
 
-	params := &ClientMockCreateSessionParams{dc, config}
+	if mmCreateSession.inspectFuncCreateSession != nil {
+		mmCreateSession.inspectFuncCreateSession(c1, s1)
+	}
+
+	mm_params := &ClientMockCreateSessionParams{c1, s1}
 
 	// Record call args
 	mmCreateSession.CreateSessionMock.mutex.Lock()
-	mmCreateSession.CreateSessionMock.callArgs = append(mmCreateSession.CreateSessionMock.callArgs, params)
+	mmCreateSession.CreateSessionMock.callArgs = append(mmCreateSession.CreateSessionMock.callArgs, mm_params)
 	mmCreateSession.CreateSessionMock.mutex.Unlock()
 
 	for _, e := range mmCreateSession.CreateSessionMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.s1, e.results.err
+			return e.results.s2, e.results.err
 		}
 	}
 
 	if mmCreateSession.CreateSessionMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmCreateSession.CreateSessionMock.defaultExpectation.Counter, 1)
-		want := mmCreateSession.CreateSessionMock.defaultExpectation.params
-		got := ClientMockCreateSessionParams{dc, config}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmCreateSession.t.Errorf("ClientMock.CreateSession got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmCreateSession.CreateSessionMock.defaultExpectation.params
+		mm_got := ClientMockCreateSessionParams{c1, s1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmCreateSession.t.Errorf("ClientMock.CreateSession got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmCreateSession.CreateSessionMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmCreateSession.CreateSessionMock.defaultExpectation.results
+		if mm_results == nil {
 			mmCreateSession.t.Fatal("No results are set for the ClientMock.CreateSession")
 		}
-		return (*results).s1, (*results).err
+		return (*mm_results).s2, (*mm_results).err
 	}
 	if mmCreateSession.funcCreateSession != nil {
-		return mmCreateSession.funcCreateSession(dc, config)
+		return mmCreateSession.funcCreateSession(c1, s1)
 	}
-	mmCreateSession.t.Fatalf("Unexpected call to ClientMock.CreateSession. %v %v", dc, config)
+	mmCreateSession.t.Fatalf("Unexpected call to ClientMock.CreateSession. %v %v", c1, s1)
 	return
 }
 
@@ -385,132 +695,219 @@ func (m *ClientMock) MinimockCreateSessionInspect() {
 	}
 }
 
-type mClientMockDatacenters struct {
+type mClientMockDataCenters struct {
 	mock               *ClientMock
-	defaultExpectation *ClientMockDatacentersExpectation
-	expectations       []*ClientMockDatacentersExpectation
+	defaultExpectation *ClientMockDataCentersExpectation
+	expectations       []*ClientMockDataCentersExpectation
+
+	callArgs []*ClientMockDataCentersParams
+	mutex    sync.RWMutex
 }
 
-// ClientMockDatacentersExpectation specifies expectation struct of the Client.Datacenters
-type ClientMockDatacentersExpectation struct {
-	mock *ClientMock
-
-	results *ClientMockDatacentersResults
+// ClientMockDataCentersExpectation specifies expectation struct of the Client.DataCenters
+type ClientMockDataCentersExpectation struct {
+	mock    *ClientMock
+	params  *ClientMockDataCentersParams
+	results *ClientMockDataCentersResults
 	Counter uint64
 }
 
-// ClientMockDatacentersResults contains results of the Client.Datacenters
-type ClientMockDatacentersResults struct {
+// ClientMockDataCentersParams contains parameters of the Client.DataCenters
+type ClientMockDataCentersParams struct {
+	c1 Ctx
+}
+
+// ClientMockDataCentersResults contains results of the Client.DataCenters
+type ClientMockDataCentersResults struct {
 	sa1 []string
 	err error
 }
 
-// Expect sets up expected params for Client.Datacenters
-func (mmDatacenters *mClientMockDatacenters) Expect() *mClientMockDatacenters {
-	if mmDatacenters.mock.funcDatacenters != nil {
-		mmDatacenters.mock.t.Fatalf("ClientMock.Datacenters mock is already set by Set")
+// Expect sets up expected params for Client.DataCenters
+func (mmDataCenters *mClientMockDataCenters) Expect(c1 Ctx) *mClientMockDataCenters {
+	if mmDataCenters.mock.funcDataCenters != nil {
+		mmDataCenters.mock.t.Fatalf("ClientMock.DataCenters mock is already set by Set")
 	}
 
-	if mmDatacenters.defaultExpectation == nil {
-		mmDatacenters.defaultExpectation = &ClientMockDatacentersExpectation{}
+	if mmDataCenters.defaultExpectation == nil {
+		mmDataCenters.defaultExpectation = &ClientMockDataCentersExpectation{}
 	}
 
-	return mmDatacenters
-}
-
-// Return sets up results that will be returned by Client.Datacenters
-func (mmDatacenters *mClientMockDatacenters) Return(sa1 []string, err error) *ClientMock {
-	if mmDatacenters.mock.funcDatacenters != nil {
-		mmDatacenters.mock.t.Fatalf("ClientMock.Datacenters mock is already set by Set")
-	}
-
-	if mmDatacenters.defaultExpectation == nil {
-		mmDatacenters.defaultExpectation = &ClientMockDatacentersExpectation{mock: mmDatacenters.mock}
-	}
-	mmDatacenters.defaultExpectation.results = &ClientMockDatacentersResults{sa1, err}
-	return mmDatacenters.mock
-}
-
-//Set uses given function f to mock the Client.Datacenters method
-func (mmDatacenters *mClientMockDatacenters) Set(f func() (sa1 []string, err error)) *ClientMock {
-	if mmDatacenters.defaultExpectation != nil {
-		mmDatacenters.mock.t.Fatalf("Default expectation is already set for the Client.Datacenters method")
-	}
-
-	if len(mmDatacenters.expectations) > 0 {
-		mmDatacenters.mock.t.Fatalf("Some expectations are already set for the Client.Datacenters method")
-	}
-
-	mmDatacenters.mock.funcDatacenters = f
-	return mmDatacenters.mock
-}
-
-// Datacenters implements Client
-func (mmDatacenters *ClientMock) Datacenters() (sa1 []string, err error) {
-	mm_atomic.AddUint64(&mmDatacenters.beforeDatacentersCounter, 1)
-	defer mm_atomic.AddUint64(&mmDatacenters.afterDatacentersCounter, 1)
-
-	if mmDatacenters.DatacentersMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&mmDatacenters.DatacentersMock.defaultExpectation.Counter, 1)
-
-		results := mmDatacenters.DatacentersMock.defaultExpectation.results
-		if results == nil {
-			mmDatacenters.t.Fatal("No results are set for the ClientMock.Datacenters")
+	mmDataCenters.defaultExpectation.params = &ClientMockDataCentersParams{c1}
+	for _, e := range mmDataCenters.expectations {
+		if minimock.Equal(e.params, mmDataCenters.defaultExpectation.params) {
+			mmDataCenters.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmDataCenters.defaultExpectation.params)
 		}
-		return (*results).sa1, (*results).err
 	}
-	if mmDatacenters.funcDatacenters != nil {
-		return mmDatacenters.funcDatacenters()
+
+	return mmDataCenters
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.DataCenters
+func (mmDataCenters *mClientMockDataCenters) Inspect(f func(c1 Ctx)) *mClientMockDataCenters {
+	if mmDataCenters.mock.inspectFuncDataCenters != nil {
+		mmDataCenters.mock.t.Fatalf("Inspect function is already set for ClientMock.DataCenters")
 	}
-	mmDatacenters.t.Fatalf("Unexpected call to ClientMock.Datacenters.")
+
+	mmDataCenters.mock.inspectFuncDataCenters = f
+
+	return mmDataCenters
+}
+
+// Return sets up results that will be returned by Client.DataCenters
+func (mmDataCenters *mClientMockDataCenters) Return(sa1 []string, err error) *ClientMock {
+	if mmDataCenters.mock.funcDataCenters != nil {
+		mmDataCenters.mock.t.Fatalf("ClientMock.DataCenters mock is already set by Set")
+	}
+
+	if mmDataCenters.defaultExpectation == nil {
+		mmDataCenters.defaultExpectation = &ClientMockDataCentersExpectation{mock: mmDataCenters.mock}
+	}
+	mmDataCenters.defaultExpectation.results = &ClientMockDataCentersResults{sa1, err}
+	return mmDataCenters.mock
+}
+
+//Set uses given function f to mock the Client.DataCenters method
+func (mmDataCenters *mClientMockDataCenters) Set(f func(c1 Ctx) (sa1 []string, err error)) *ClientMock {
+	if mmDataCenters.defaultExpectation != nil {
+		mmDataCenters.mock.t.Fatalf("Default expectation is already set for the Client.DataCenters method")
+	}
+
+	if len(mmDataCenters.expectations) > 0 {
+		mmDataCenters.mock.t.Fatalf("Some expectations are already set for the Client.DataCenters method")
+	}
+
+	mmDataCenters.mock.funcDataCenters = f
+	return mmDataCenters.mock
+}
+
+// When sets expectation for the Client.DataCenters which will trigger the result defined by the following
+// Then helper
+func (mmDataCenters *mClientMockDataCenters) When(c1 Ctx) *ClientMockDataCentersExpectation {
+	if mmDataCenters.mock.funcDataCenters != nil {
+		mmDataCenters.mock.t.Fatalf("ClientMock.DataCenters mock is already set by Set")
+	}
+
+	expectation := &ClientMockDataCentersExpectation{
+		mock:   mmDataCenters.mock,
+		params: &ClientMockDataCentersParams{c1},
+	}
+	mmDataCenters.expectations = append(mmDataCenters.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Client.DataCenters return parameters for the expectation previously defined by the When method
+func (e *ClientMockDataCentersExpectation) Then(sa1 []string, err error) *ClientMock {
+	e.results = &ClientMockDataCentersResults{sa1, err}
+	return e.mock
+}
+
+// DataCenters implements Client
+func (mmDataCenters *ClientMock) DataCenters(c1 Ctx) (sa1 []string, err error) {
+	mm_atomic.AddUint64(&mmDataCenters.beforeDataCentersCounter, 1)
+	defer mm_atomic.AddUint64(&mmDataCenters.afterDataCentersCounter, 1)
+
+	if mmDataCenters.inspectFuncDataCenters != nil {
+		mmDataCenters.inspectFuncDataCenters(c1)
+	}
+
+	mm_params := &ClientMockDataCentersParams{c1}
+
+	// Record call args
+	mmDataCenters.DataCentersMock.mutex.Lock()
+	mmDataCenters.DataCentersMock.callArgs = append(mmDataCenters.DataCentersMock.callArgs, mm_params)
+	mmDataCenters.DataCentersMock.mutex.Unlock()
+
+	for _, e := range mmDataCenters.DataCentersMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.sa1, e.results.err
+		}
+	}
+
+	if mmDataCenters.DataCentersMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmDataCenters.DataCentersMock.defaultExpectation.Counter, 1)
+		mm_want := mmDataCenters.DataCentersMock.defaultExpectation.params
+		mm_got := ClientMockDataCentersParams{c1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmDataCenters.t.Errorf("ClientMock.DataCenters got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmDataCenters.DataCentersMock.defaultExpectation.results
+		if mm_results == nil {
+			mmDataCenters.t.Fatal("No results are set for the ClientMock.DataCenters")
+		}
+		return (*mm_results).sa1, (*mm_results).err
+	}
+	if mmDataCenters.funcDataCenters != nil {
+		return mmDataCenters.funcDataCenters(c1)
+	}
+	mmDataCenters.t.Fatalf("Unexpected call to ClientMock.DataCenters. %v", c1)
 	return
 }
 
-// DatacentersAfterCounter returns a count of finished ClientMock.Datacenters invocations
-func (mmDatacenters *ClientMock) DatacentersAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmDatacenters.afterDatacentersCounter)
+// DataCentersAfterCounter returns a count of finished ClientMock.DataCenters invocations
+func (mmDataCenters *ClientMock) DataCentersAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmDataCenters.afterDataCentersCounter)
 }
 
-// DatacentersBeforeCounter returns a count of ClientMock.Datacenters invocations
-func (mmDatacenters *ClientMock) DatacentersBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmDatacenters.beforeDatacentersCounter)
+// DataCentersBeforeCounter returns a count of ClientMock.DataCenters invocations
+func (mmDataCenters *ClientMock) DataCentersBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmDataCenters.beforeDataCentersCounter)
 }
 
-// MinimockDatacentersDone returns true if the count of the Datacenters invocations corresponds
+// Calls returns a list of arguments used in each call to ClientMock.DataCenters.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmDataCenters *mClientMockDataCenters) Calls() []*ClientMockDataCentersParams {
+	mmDataCenters.mutex.RLock()
+
+	argCopy := make([]*ClientMockDataCentersParams, len(mmDataCenters.callArgs))
+	copy(argCopy, mmDataCenters.callArgs)
+
+	mmDataCenters.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockDataCentersDone returns true if the count of the DataCenters invocations corresponds
 // the number of defined expectations
-func (m *ClientMock) MinimockDatacentersDone() bool {
-	for _, e := range m.DatacentersMock.expectations {
+func (m *ClientMock) MinimockDataCentersDone() bool {
+	for _, e := range m.DataCentersMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
 		}
 	}
 
 	// if default expectation was set then invocations count should be greater than zero
-	if m.DatacentersMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDatacentersCounter) < 1 {
+	if m.DataCentersMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDataCentersCounter) < 1 {
 		return false
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcDatacenters != nil && mm_atomic.LoadUint64(&m.afterDatacentersCounter) < 1 {
+	if m.funcDataCenters != nil && mm_atomic.LoadUint64(&m.afterDataCentersCounter) < 1 {
 		return false
 	}
 	return true
 }
 
-// MinimockDatacentersInspect logs each unmet expectation
-func (m *ClientMock) MinimockDatacentersInspect() {
-	for _, e := range m.DatacentersMock.expectations {
+// MinimockDataCentersInspect logs each unmet expectation
+func (m *ClientMock) MinimockDataCentersInspect() {
+	for _, e := range m.DataCentersMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Error("Expected call to ClientMock.Datacenters")
+			m.t.Errorf("Expected call to ClientMock.DataCenters with params: %#v", *e.params)
 		}
 	}
 
 	// if default expectation was set then invocations count should be greater than zero
-	if m.DatacentersMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDatacentersCounter) < 1 {
-		m.t.Error("Expected call to ClientMock.Datacenters")
+	if m.DataCentersMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDataCentersCounter) < 1 {
+		if m.DataCentersMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ClientMock.DataCenters")
+		} else {
+			m.t.Errorf("Expected call to ClientMock.DataCenters with params: %#v", *m.DataCentersMock.defaultExpectation.params)
+		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcDatacenters != nil && mm_atomic.LoadUint64(&m.afterDatacentersCounter) < 1 {
-		m.t.Error("Expected call to ClientMock.Datacenters")
+	if m.funcDataCenters != nil && mm_atomic.LoadUint64(&m.afterDataCentersCounter) < 1 {
+		m.t.Error("Expected call to ClientMock.DataCenters")
 	}
 }
 
@@ -533,8 +930,9 @@ type ClientMockDeleteExpectation struct {
 
 // ClientMockDeleteParams contains parameters of the Client.Delete
 type ClientMockDeleteParams struct {
-	dc   string
-	path string
+	c1 Ctx
+	s1 string
+	q1 Query
 }
 
 // ClientMockDeleteResults contains results of the Client.Delete
@@ -543,7 +941,7 @@ type ClientMockDeleteResults struct {
 }
 
 // Expect sets up expected params for Client.Delete
-func (mmDelete *mClientMockDelete) Expect(dc string, path string) *mClientMockDelete {
+func (mmDelete *mClientMockDelete) Expect(c1 Ctx, s1 string, q1 Query) *mClientMockDelete {
 	if mmDelete.mock.funcDelete != nil {
 		mmDelete.mock.t.Fatalf("ClientMock.Delete mock is already set by Set")
 	}
@@ -552,12 +950,23 @@ func (mmDelete *mClientMockDelete) Expect(dc string, path string) *mClientMockDe
 		mmDelete.defaultExpectation = &ClientMockDeleteExpectation{}
 	}
 
-	mmDelete.defaultExpectation.params = &ClientMockDeleteParams{dc, path}
+	mmDelete.defaultExpectation.params = &ClientMockDeleteParams{c1, s1, q1}
 	for _, e := range mmDelete.expectations {
 		if minimock.Equal(e.params, mmDelete.defaultExpectation.params) {
 			mmDelete.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmDelete.defaultExpectation.params)
 		}
 	}
+
+	return mmDelete
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Delete
+func (mmDelete *mClientMockDelete) Inspect(f func(c1 Ctx, s1 string, q1 Query)) *mClientMockDelete {
+	if mmDelete.mock.inspectFuncDelete != nil {
+		mmDelete.mock.t.Fatalf("Inspect function is already set for ClientMock.Delete")
+	}
+
+	mmDelete.mock.inspectFuncDelete = f
 
 	return mmDelete
 }
@@ -576,7 +985,7 @@ func (mmDelete *mClientMockDelete) Return(err error) *ClientMock {
 }
 
 //Set uses given function f to mock the Client.Delete method
-func (mmDelete *mClientMockDelete) Set(f func(dc string, path string) (err error)) *ClientMock {
+func (mmDelete *mClientMockDelete) Set(f func(c1 Ctx, s1 string, q1 Query) (err error)) *ClientMock {
 	if mmDelete.defaultExpectation != nil {
 		mmDelete.mock.t.Fatalf("Default expectation is already set for the Client.Delete method")
 	}
@@ -591,14 +1000,14 @@ func (mmDelete *mClientMockDelete) Set(f func(dc string, path string) (err error
 
 // When sets expectation for the Client.Delete which will trigger the result defined by the following
 // Then helper
-func (mmDelete *mClientMockDelete) When(dc string, path string) *ClientMockDeleteExpectation {
+func (mmDelete *mClientMockDelete) When(c1 Ctx, s1 string, q1 Query) *ClientMockDeleteExpectation {
 	if mmDelete.mock.funcDelete != nil {
 		mmDelete.mock.t.Fatalf("ClientMock.Delete mock is already set by Set")
 	}
 
 	expectation := &ClientMockDeleteExpectation{
 		mock:   mmDelete.mock,
-		params: &ClientMockDeleteParams{dc, path},
+		params: &ClientMockDeleteParams{c1, s1, q1},
 	}
 	mmDelete.expectations = append(mmDelete.expectations, expectation)
 	return expectation
@@ -611,19 +1020,23 @@ func (e *ClientMockDeleteExpectation) Then(err error) *ClientMock {
 }
 
 // Delete implements Client
-func (mmDelete *ClientMock) Delete(dc string, path string) (err error) {
+func (mmDelete *ClientMock) Delete(c1 Ctx, s1 string, q1 Query) (err error) {
 	mm_atomic.AddUint64(&mmDelete.beforeDeleteCounter, 1)
 	defer mm_atomic.AddUint64(&mmDelete.afterDeleteCounter, 1)
 
-	params := &ClientMockDeleteParams{dc, path}
+	if mmDelete.inspectFuncDelete != nil {
+		mmDelete.inspectFuncDelete(c1, s1, q1)
+	}
+
+	mm_params := &ClientMockDeleteParams{c1, s1, q1}
 
 	// Record call args
 	mmDelete.DeleteMock.mutex.Lock()
-	mmDelete.DeleteMock.callArgs = append(mmDelete.DeleteMock.callArgs, params)
+	mmDelete.DeleteMock.callArgs = append(mmDelete.DeleteMock.callArgs, mm_params)
 	mmDelete.DeleteMock.mutex.Unlock()
 
 	for _, e := range mmDelete.DeleteMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.err
 		}
@@ -631,22 +1044,22 @@ func (mmDelete *ClientMock) Delete(dc string, path string) (err error) {
 
 	if mmDelete.DeleteMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmDelete.DeleteMock.defaultExpectation.Counter, 1)
-		want := mmDelete.DeleteMock.defaultExpectation.params
-		got := ClientMockDeleteParams{dc, path}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmDelete.t.Errorf("ClientMock.Delete got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmDelete.DeleteMock.defaultExpectation.params
+		mm_got := ClientMockDeleteParams{c1, s1, q1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmDelete.t.Errorf("ClientMock.Delete got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmDelete.DeleteMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmDelete.DeleteMock.defaultExpectation.results
+		if mm_results == nil {
 			mmDelete.t.Fatal("No results are set for the ClientMock.Delete")
 		}
-		return (*results).err
+		return (*mm_results).err
 	}
 	if mmDelete.funcDelete != nil {
-		return mmDelete.funcDelete(dc, path)
+		return mmDelete.funcDelete(c1, s1, q1)
 	}
-	mmDelete.t.Fatalf("Unexpected call to ClientMock.Delete. %v %v", dc, path)
+	mmDelete.t.Fatalf("Unexpected call to ClientMock.Delete. %v %v %v", c1, s1, q1)
 	return
 }
 
@@ -734,8 +1147,8 @@ type ClientMockDeleteSessionExpectation struct {
 
 // ClientMockDeleteSessionParams contains parameters of the Client.DeleteSession
 type ClientMockDeleteSessionParams struct {
-	dc string
-	id SessionID
+	c1 Ctx
+	s1 SessionQuery
 }
 
 // ClientMockDeleteSessionResults contains results of the Client.DeleteSession
@@ -744,7 +1157,7 @@ type ClientMockDeleteSessionResults struct {
 }
 
 // Expect sets up expected params for Client.DeleteSession
-func (mmDeleteSession *mClientMockDeleteSession) Expect(dc string, id SessionID) *mClientMockDeleteSession {
+func (mmDeleteSession *mClientMockDeleteSession) Expect(c1 Ctx, s1 SessionQuery) *mClientMockDeleteSession {
 	if mmDeleteSession.mock.funcDeleteSession != nil {
 		mmDeleteSession.mock.t.Fatalf("ClientMock.DeleteSession mock is already set by Set")
 	}
@@ -753,12 +1166,23 @@ func (mmDeleteSession *mClientMockDeleteSession) Expect(dc string, id SessionID)
 		mmDeleteSession.defaultExpectation = &ClientMockDeleteSessionExpectation{}
 	}
 
-	mmDeleteSession.defaultExpectation.params = &ClientMockDeleteSessionParams{dc, id}
+	mmDeleteSession.defaultExpectation.params = &ClientMockDeleteSessionParams{c1, s1}
 	for _, e := range mmDeleteSession.expectations {
 		if minimock.Equal(e.params, mmDeleteSession.defaultExpectation.params) {
 			mmDeleteSession.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmDeleteSession.defaultExpectation.params)
 		}
 	}
+
+	return mmDeleteSession
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.DeleteSession
+func (mmDeleteSession *mClientMockDeleteSession) Inspect(f func(c1 Ctx, s1 SessionQuery)) *mClientMockDeleteSession {
+	if mmDeleteSession.mock.inspectFuncDeleteSession != nil {
+		mmDeleteSession.mock.t.Fatalf("Inspect function is already set for ClientMock.DeleteSession")
+	}
+
+	mmDeleteSession.mock.inspectFuncDeleteSession = f
 
 	return mmDeleteSession
 }
@@ -777,7 +1201,7 @@ func (mmDeleteSession *mClientMockDeleteSession) Return(err error) *ClientMock {
 }
 
 //Set uses given function f to mock the Client.DeleteSession method
-func (mmDeleteSession *mClientMockDeleteSession) Set(f func(dc string, id SessionID) (err error)) *ClientMock {
+func (mmDeleteSession *mClientMockDeleteSession) Set(f func(c1 Ctx, s1 SessionQuery) (err error)) *ClientMock {
 	if mmDeleteSession.defaultExpectation != nil {
 		mmDeleteSession.mock.t.Fatalf("Default expectation is already set for the Client.DeleteSession method")
 	}
@@ -792,14 +1216,14 @@ func (mmDeleteSession *mClientMockDeleteSession) Set(f func(dc string, id Sessio
 
 // When sets expectation for the Client.DeleteSession which will trigger the result defined by the following
 // Then helper
-func (mmDeleteSession *mClientMockDeleteSession) When(dc string, id SessionID) *ClientMockDeleteSessionExpectation {
+func (mmDeleteSession *mClientMockDeleteSession) When(c1 Ctx, s1 SessionQuery) *ClientMockDeleteSessionExpectation {
 	if mmDeleteSession.mock.funcDeleteSession != nil {
 		mmDeleteSession.mock.t.Fatalf("ClientMock.DeleteSession mock is already set by Set")
 	}
 
 	expectation := &ClientMockDeleteSessionExpectation{
 		mock:   mmDeleteSession.mock,
-		params: &ClientMockDeleteSessionParams{dc, id},
+		params: &ClientMockDeleteSessionParams{c1, s1},
 	}
 	mmDeleteSession.expectations = append(mmDeleteSession.expectations, expectation)
 	return expectation
@@ -812,19 +1236,23 @@ func (e *ClientMockDeleteSessionExpectation) Then(err error) *ClientMock {
 }
 
 // DeleteSession implements Client
-func (mmDeleteSession *ClientMock) DeleteSession(dc string, id SessionID) (err error) {
+func (mmDeleteSession *ClientMock) DeleteSession(c1 Ctx, s1 SessionQuery) (err error) {
 	mm_atomic.AddUint64(&mmDeleteSession.beforeDeleteSessionCounter, 1)
 	defer mm_atomic.AddUint64(&mmDeleteSession.afterDeleteSessionCounter, 1)
 
-	params := &ClientMockDeleteSessionParams{dc, id}
+	if mmDeleteSession.inspectFuncDeleteSession != nil {
+		mmDeleteSession.inspectFuncDeleteSession(c1, s1)
+	}
+
+	mm_params := &ClientMockDeleteSessionParams{c1, s1}
 
 	// Record call args
 	mmDeleteSession.DeleteSessionMock.mutex.Lock()
-	mmDeleteSession.DeleteSessionMock.callArgs = append(mmDeleteSession.DeleteSessionMock.callArgs, params)
+	mmDeleteSession.DeleteSessionMock.callArgs = append(mmDeleteSession.DeleteSessionMock.callArgs, mm_params)
 	mmDeleteSession.DeleteSessionMock.mutex.Unlock()
 
 	for _, e := range mmDeleteSession.DeleteSessionMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.err
 		}
@@ -832,22 +1260,22 @@ func (mmDeleteSession *ClientMock) DeleteSession(dc string, id SessionID) (err e
 
 	if mmDeleteSession.DeleteSessionMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmDeleteSession.DeleteSessionMock.defaultExpectation.Counter, 1)
-		want := mmDeleteSession.DeleteSessionMock.defaultExpectation.params
-		got := ClientMockDeleteSessionParams{dc, id}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmDeleteSession.t.Errorf("ClientMock.DeleteSession got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmDeleteSession.DeleteSessionMock.defaultExpectation.params
+		mm_got := ClientMockDeleteSessionParams{c1, s1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmDeleteSession.t.Errorf("ClientMock.DeleteSession got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmDeleteSession.DeleteSessionMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmDeleteSession.DeleteSessionMock.defaultExpectation.results
+		if mm_results == nil {
 			mmDeleteSession.t.Fatal("No results are set for the ClientMock.DeleteSession")
 		}
-		return (*results).err
+		return (*mm_results).err
 	}
 	if mmDeleteSession.funcDeleteSession != nil {
-		return mmDeleteSession.funcDeleteSession(dc, id)
+		return mmDeleteSession.funcDeleteSession(c1, s1)
 	}
-	mmDeleteSession.t.Fatalf("Unexpected call to ClientMock.DeleteSession. %v %v", dc, id)
+	mmDeleteSession.t.Fatalf("Unexpected call to ClientMock.DeleteSession. %v %v", c1, s1)
 	return
 }
 
@@ -916,6 +1344,222 @@ func (m *ClientMock) MinimockDeleteSessionInspect() {
 	}
 }
 
+type mClientMockForceLeave struct {
+	mock               *ClientMock
+	defaultExpectation *ClientMockForceLeaveExpectation
+	expectations       []*ClientMockForceLeaveExpectation
+
+	callArgs []*ClientMockForceLeaveParams
+	mutex    sync.RWMutex
+}
+
+// ClientMockForceLeaveExpectation specifies expectation struct of the Client.ForceLeave
+type ClientMockForceLeaveExpectation struct {
+	mock    *ClientMock
+	params  *ClientMockForceLeaveParams
+	results *ClientMockForceLeaveResults
+	Counter uint64
+}
+
+// ClientMockForceLeaveParams contains parameters of the Client.ForceLeave
+type ClientMockForceLeaveParams struct {
+	ctx  Ctx
+	node string
+}
+
+// ClientMockForceLeaveResults contains results of the Client.ForceLeave
+type ClientMockForceLeaveResults struct {
+	err error
+}
+
+// Expect sets up expected params for Client.ForceLeave
+func (mmForceLeave *mClientMockForceLeave) Expect(ctx Ctx, node string) *mClientMockForceLeave {
+	if mmForceLeave.mock.funcForceLeave != nil {
+		mmForceLeave.mock.t.Fatalf("ClientMock.ForceLeave mock is already set by Set")
+	}
+
+	if mmForceLeave.defaultExpectation == nil {
+		mmForceLeave.defaultExpectation = &ClientMockForceLeaveExpectation{}
+	}
+
+	mmForceLeave.defaultExpectation.params = &ClientMockForceLeaveParams{ctx, node}
+	for _, e := range mmForceLeave.expectations {
+		if minimock.Equal(e.params, mmForceLeave.defaultExpectation.params) {
+			mmForceLeave.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmForceLeave.defaultExpectation.params)
+		}
+	}
+
+	return mmForceLeave
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.ForceLeave
+func (mmForceLeave *mClientMockForceLeave) Inspect(f func(ctx Ctx, node string)) *mClientMockForceLeave {
+	if mmForceLeave.mock.inspectFuncForceLeave != nil {
+		mmForceLeave.mock.t.Fatalf("Inspect function is already set for ClientMock.ForceLeave")
+	}
+
+	mmForceLeave.mock.inspectFuncForceLeave = f
+
+	return mmForceLeave
+}
+
+// Return sets up results that will be returned by Client.ForceLeave
+func (mmForceLeave *mClientMockForceLeave) Return(err error) *ClientMock {
+	if mmForceLeave.mock.funcForceLeave != nil {
+		mmForceLeave.mock.t.Fatalf("ClientMock.ForceLeave mock is already set by Set")
+	}
+
+	if mmForceLeave.defaultExpectation == nil {
+		mmForceLeave.defaultExpectation = &ClientMockForceLeaveExpectation{mock: mmForceLeave.mock}
+	}
+	mmForceLeave.defaultExpectation.results = &ClientMockForceLeaveResults{err}
+	return mmForceLeave.mock
+}
+
+//Set uses given function f to mock the Client.ForceLeave method
+func (mmForceLeave *mClientMockForceLeave) Set(f func(ctx Ctx, node string) (err error)) *ClientMock {
+	if mmForceLeave.defaultExpectation != nil {
+		mmForceLeave.mock.t.Fatalf("Default expectation is already set for the Client.ForceLeave method")
+	}
+
+	if len(mmForceLeave.expectations) > 0 {
+		mmForceLeave.mock.t.Fatalf("Some expectations are already set for the Client.ForceLeave method")
+	}
+
+	mmForceLeave.mock.funcForceLeave = f
+	return mmForceLeave.mock
+}
+
+// When sets expectation for the Client.ForceLeave which will trigger the result defined by the following
+// Then helper
+func (mmForceLeave *mClientMockForceLeave) When(ctx Ctx, node string) *ClientMockForceLeaveExpectation {
+	if mmForceLeave.mock.funcForceLeave != nil {
+		mmForceLeave.mock.t.Fatalf("ClientMock.ForceLeave mock is already set by Set")
+	}
+
+	expectation := &ClientMockForceLeaveExpectation{
+		mock:   mmForceLeave.mock,
+		params: &ClientMockForceLeaveParams{ctx, node},
+	}
+	mmForceLeave.expectations = append(mmForceLeave.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Client.ForceLeave return parameters for the expectation previously defined by the When method
+func (e *ClientMockForceLeaveExpectation) Then(err error) *ClientMock {
+	e.results = &ClientMockForceLeaveResults{err}
+	return e.mock
+}
+
+// ForceLeave implements Client
+func (mmForceLeave *ClientMock) ForceLeave(ctx Ctx, node string) (err error) {
+	mm_atomic.AddUint64(&mmForceLeave.beforeForceLeaveCounter, 1)
+	defer mm_atomic.AddUint64(&mmForceLeave.afterForceLeaveCounter, 1)
+
+	if mmForceLeave.inspectFuncForceLeave != nil {
+		mmForceLeave.inspectFuncForceLeave(ctx, node)
+	}
+
+	mm_params := &ClientMockForceLeaveParams{ctx, node}
+
+	// Record call args
+	mmForceLeave.ForceLeaveMock.mutex.Lock()
+	mmForceLeave.ForceLeaveMock.callArgs = append(mmForceLeave.ForceLeaveMock.callArgs, mm_params)
+	mmForceLeave.ForceLeaveMock.mutex.Unlock()
+
+	for _, e := range mmForceLeave.ForceLeaveMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmForceLeave.ForceLeaveMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmForceLeave.ForceLeaveMock.defaultExpectation.Counter, 1)
+		mm_want := mmForceLeave.ForceLeaveMock.defaultExpectation.params
+		mm_got := ClientMockForceLeaveParams{ctx, node}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmForceLeave.t.Errorf("ClientMock.ForceLeave got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmForceLeave.ForceLeaveMock.defaultExpectation.results
+		if mm_results == nil {
+			mmForceLeave.t.Fatal("No results are set for the ClientMock.ForceLeave")
+		}
+		return (*mm_results).err
+	}
+	if mmForceLeave.funcForceLeave != nil {
+		return mmForceLeave.funcForceLeave(ctx, node)
+	}
+	mmForceLeave.t.Fatalf("Unexpected call to ClientMock.ForceLeave. %v %v", ctx, node)
+	return
+}
+
+// ForceLeaveAfterCounter returns a count of finished ClientMock.ForceLeave invocations
+func (mmForceLeave *ClientMock) ForceLeaveAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmForceLeave.afterForceLeaveCounter)
+}
+
+// ForceLeaveBeforeCounter returns a count of ClientMock.ForceLeave invocations
+func (mmForceLeave *ClientMock) ForceLeaveBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmForceLeave.beforeForceLeaveCounter)
+}
+
+// Calls returns a list of arguments used in each call to ClientMock.ForceLeave.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmForceLeave *mClientMockForceLeave) Calls() []*ClientMockForceLeaveParams {
+	mmForceLeave.mutex.RLock()
+
+	argCopy := make([]*ClientMockForceLeaveParams, len(mmForceLeave.callArgs))
+	copy(argCopy, mmForceLeave.callArgs)
+
+	mmForceLeave.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockForceLeaveDone returns true if the count of the ForceLeave invocations corresponds
+// the number of defined expectations
+func (m *ClientMock) MinimockForceLeaveDone() bool {
+	for _, e := range m.ForceLeaveMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.ForceLeaveMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterForceLeaveCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcForceLeave != nil && mm_atomic.LoadUint64(&m.afterForceLeaveCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockForceLeaveInspect logs each unmet expectation
+func (m *ClientMock) MinimockForceLeaveInspect() {
+	for _, e := range m.ForceLeaveMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ClientMock.ForceLeave with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.ForceLeaveMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterForceLeaveCounter) < 1 {
+		if m.ForceLeaveMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ClientMock.ForceLeave")
+		} else {
+			m.t.Errorf("Expected call to ClientMock.ForceLeave with params: %#v", *m.ForceLeaveMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcForceLeave != nil && mm_atomic.LoadUint64(&m.afterForceLeaveCounter) < 1 {
+		m.t.Error("Expected call to ClientMock.ForceLeave")
+	}
+}
+
 type mClientMockGet struct {
 	mock               *ClientMock
 	defaultExpectation *ClientMockGetExpectation
@@ -935,18 +1579,19 @@ type ClientMockGetExpectation struct {
 
 // ClientMockGetParams contains parameters of the Client.Get
 type ClientMockGetParams struct {
-	dc   string
-	path string
+	c1 Ctx
+	s1 string
+	q1 Query
 }
 
 // ClientMockGetResults contains results of the Client.Get
 type ClientMockGetResults struct {
-	s1  string
+	s2  string
 	err error
 }
 
 // Expect sets up expected params for Client.Get
-func (mmGet *mClientMockGet) Expect(dc string, path string) *mClientMockGet {
+func (mmGet *mClientMockGet) Expect(c1 Ctx, s1 string, q1 Query) *mClientMockGet {
 	if mmGet.mock.funcGet != nil {
 		mmGet.mock.t.Fatalf("ClientMock.Get mock is already set by Set")
 	}
@@ -955,7 +1600,7 @@ func (mmGet *mClientMockGet) Expect(dc string, path string) *mClientMockGet {
 		mmGet.defaultExpectation = &ClientMockGetExpectation{}
 	}
 
-	mmGet.defaultExpectation.params = &ClientMockGetParams{dc, path}
+	mmGet.defaultExpectation.params = &ClientMockGetParams{c1, s1, q1}
 	for _, e := range mmGet.expectations {
 		if minimock.Equal(e.params, mmGet.defaultExpectation.params) {
 			mmGet.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmGet.defaultExpectation.params)
@@ -965,8 +1610,19 @@ func (mmGet *mClientMockGet) Expect(dc string, path string) *mClientMockGet {
 	return mmGet
 }
 
+// Inspect accepts an inspector function that has same arguments as the Client.Get
+func (mmGet *mClientMockGet) Inspect(f func(c1 Ctx, s1 string, q1 Query)) *mClientMockGet {
+	if mmGet.mock.inspectFuncGet != nil {
+		mmGet.mock.t.Fatalf("Inspect function is already set for ClientMock.Get")
+	}
+
+	mmGet.mock.inspectFuncGet = f
+
+	return mmGet
+}
+
 // Return sets up results that will be returned by Client.Get
-func (mmGet *mClientMockGet) Return(s1 string, err error) *ClientMock {
+func (mmGet *mClientMockGet) Return(s2 string, err error) *ClientMock {
 	if mmGet.mock.funcGet != nil {
 		mmGet.mock.t.Fatalf("ClientMock.Get mock is already set by Set")
 	}
@@ -974,12 +1630,12 @@ func (mmGet *mClientMockGet) Return(s1 string, err error) *ClientMock {
 	if mmGet.defaultExpectation == nil {
 		mmGet.defaultExpectation = &ClientMockGetExpectation{mock: mmGet.mock}
 	}
-	mmGet.defaultExpectation.results = &ClientMockGetResults{s1, err}
+	mmGet.defaultExpectation.results = &ClientMockGetResults{s2, err}
 	return mmGet.mock
 }
 
 //Set uses given function f to mock the Client.Get method
-func (mmGet *mClientMockGet) Set(f func(dc string, path string) (s1 string, err error)) *ClientMock {
+func (mmGet *mClientMockGet) Set(f func(c1 Ctx, s1 string, q1 Query) (s2 string, err error)) *ClientMock {
 	if mmGet.defaultExpectation != nil {
 		mmGet.mock.t.Fatalf("Default expectation is already set for the Client.Get method")
 	}
@@ -994,62 +1650,66 @@ func (mmGet *mClientMockGet) Set(f func(dc string, path string) (s1 string, err 
 
 // When sets expectation for the Client.Get which will trigger the result defined by the following
 // Then helper
-func (mmGet *mClientMockGet) When(dc string, path string) *ClientMockGetExpectation {
+func (mmGet *mClientMockGet) When(c1 Ctx, s1 string, q1 Query) *ClientMockGetExpectation {
 	if mmGet.mock.funcGet != nil {
 		mmGet.mock.t.Fatalf("ClientMock.Get mock is already set by Set")
 	}
 
 	expectation := &ClientMockGetExpectation{
 		mock:   mmGet.mock,
-		params: &ClientMockGetParams{dc, path},
+		params: &ClientMockGetParams{c1, s1, q1},
 	}
 	mmGet.expectations = append(mmGet.expectations, expectation)
 	return expectation
 }
 
 // Then sets up Client.Get return parameters for the expectation previously defined by the When method
-func (e *ClientMockGetExpectation) Then(s1 string, err error) *ClientMock {
-	e.results = &ClientMockGetResults{s1, err}
+func (e *ClientMockGetExpectation) Then(s2 string, err error) *ClientMock {
+	e.results = &ClientMockGetResults{s2, err}
 	return e.mock
 }
 
 // Get implements Client
-func (mmGet *ClientMock) Get(dc string, path string) (s1 string, err error) {
+func (mmGet *ClientMock) Get(c1 Ctx, s1 string, q1 Query) (s2 string, err error) {
 	mm_atomic.AddUint64(&mmGet.beforeGetCounter, 1)
 	defer mm_atomic.AddUint64(&mmGet.afterGetCounter, 1)
 
-	params := &ClientMockGetParams{dc, path}
+	if mmGet.inspectFuncGet != nil {
+		mmGet.inspectFuncGet(c1, s1, q1)
+	}
+
+	mm_params := &ClientMockGetParams{c1, s1, q1}
 
 	// Record call args
 	mmGet.GetMock.mutex.Lock()
-	mmGet.GetMock.callArgs = append(mmGet.GetMock.callArgs, params)
+	mmGet.GetMock.callArgs = append(mmGet.GetMock.callArgs, mm_params)
 	mmGet.GetMock.mutex.Unlock()
 
 	for _, e := range mmGet.GetMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.s1, e.results.err
+			return e.results.s2, e.results.err
 		}
 	}
 
 	if mmGet.GetMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmGet.GetMock.defaultExpectation.Counter, 1)
-		want := mmGet.GetMock.defaultExpectation.params
-		got := ClientMockGetParams{dc, path}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmGet.t.Errorf("ClientMock.Get got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmGet.GetMock.defaultExpectation.params
+		mm_got := ClientMockGetParams{c1, s1, q1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmGet.t.Errorf("ClientMock.Get got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmGet.GetMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmGet.GetMock.defaultExpectation.results
+		if mm_results == nil {
 			mmGet.t.Fatal("No results are set for the ClientMock.Get")
 		}
-		return (*results).s1, (*results).err
+		return (*mm_results).s2, (*mm_results).err
 	}
 	if mmGet.funcGet != nil {
-		return mmGet.funcGet(dc, path)
+		return mmGet.funcGet(c1, s1, q1)
 	}
-	mmGet.t.Fatalf("Unexpected call to ClientMock.Get. %v %v", dc, path)
+	mmGet.t.Fatalf("Unexpected call to ClientMock.Get. %v %v %v", c1, s1, q1)
 	return
 }
 
@@ -1118,6 +1778,223 @@ func (m *ClientMock) MinimockGetInspect() {
 	}
 }
 
+type mClientMockJoin struct {
+	mock               *ClientMock
+	defaultExpectation *ClientMockJoinExpectation
+	expectations       []*ClientMockJoinExpectation
+
+	callArgs []*ClientMockJoinParams
+	mutex    sync.RWMutex
+}
+
+// ClientMockJoinExpectation specifies expectation struct of the Client.Join
+type ClientMockJoinExpectation struct {
+	mock    *ClientMock
+	params  *ClientMockJoinParams
+	results *ClientMockJoinResults
+	Counter uint64
+}
+
+// ClientMockJoinParams contains parameters of the Client.Join
+type ClientMockJoinParams struct {
+	ctx     Ctx
+	address string
+	wan     bool
+}
+
+// ClientMockJoinResults contains results of the Client.Join
+type ClientMockJoinResults struct {
+	err error
+}
+
+// Expect sets up expected params for Client.Join
+func (mmJoin *mClientMockJoin) Expect(ctx Ctx, address string, wan bool) *mClientMockJoin {
+	if mmJoin.mock.funcJoin != nil {
+		mmJoin.mock.t.Fatalf("ClientMock.Join mock is already set by Set")
+	}
+
+	if mmJoin.defaultExpectation == nil {
+		mmJoin.defaultExpectation = &ClientMockJoinExpectation{}
+	}
+
+	mmJoin.defaultExpectation.params = &ClientMockJoinParams{ctx, address, wan}
+	for _, e := range mmJoin.expectations {
+		if minimock.Equal(e.params, mmJoin.defaultExpectation.params) {
+			mmJoin.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmJoin.defaultExpectation.params)
+		}
+	}
+
+	return mmJoin
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Join
+func (mmJoin *mClientMockJoin) Inspect(f func(ctx Ctx, address string, wan bool)) *mClientMockJoin {
+	if mmJoin.mock.inspectFuncJoin != nil {
+		mmJoin.mock.t.Fatalf("Inspect function is already set for ClientMock.Join")
+	}
+
+	mmJoin.mock.inspectFuncJoin = f
+
+	return mmJoin
+}
+
+// Return sets up results that will be returned by Client.Join
+func (mmJoin *mClientMockJoin) Return(err error) *ClientMock {
+	if mmJoin.mock.funcJoin != nil {
+		mmJoin.mock.t.Fatalf("ClientMock.Join mock is already set by Set")
+	}
+
+	if mmJoin.defaultExpectation == nil {
+		mmJoin.defaultExpectation = &ClientMockJoinExpectation{mock: mmJoin.mock}
+	}
+	mmJoin.defaultExpectation.results = &ClientMockJoinResults{err}
+	return mmJoin.mock
+}
+
+//Set uses given function f to mock the Client.Join method
+func (mmJoin *mClientMockJoin) Set(f func(ctx Ctx, address string, wan bool) (err error)) *ClientMock {
+	if mmJoin.defaultExpectation != nil {
+		mmJoin.mock.t.Fatalf("Default expectation is already set for the Client.Join method")
+	}
+
+	if len(mmJoin.expectations) > 0 {
+		mmJoin.mock.t.Fatalf("Some expectations are already set for the Client.Join method")
+	}
+
+	mmJoin.mock.funcJoin = f
+	return mmJoin.mock
+}
+
+// When sets expectation for the Client.Join which will trigger the result defined by the following
+// Then helper
+func (mmJoin *mClientMockJoin) When(ctx Ctx, address string, wan bool) *ClientMockJoinExpectation {
+	if mmJoin.mock.funcJoin != nil {
+		mmJoin.mock.t.Fatalf("ClientMock.Join mock is already set by Set")
+	}
+
+	expectation := &ClientMockJoinExpectation{
+		mock:   mmJoin.mock,
+		params: &ClientMockJoinParams{ctx, address, wan},
+	}
+	mmJoin.expectations = append(mmJoin.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Client.Join return parameters for the expectation previously defined by the When method
+func (e *ClientMockJoinExpectation) Then(err error) *ClientMock {
+	e.results = &ClientMockJoinResults{err}
+	return e.mock
+}
+
+// Join implements Client
+func (mmJoin *ClientMock) Join(ctx Ctx, address string, wan bool) (err error) {
+	mm_atomic.AddUint64(&mmJoin.beforeJoinCounter, 1)
+	defer mm_atomic.AddUint64(&mmJoin.afterJoinCounter, 1)
+
+	if mmJoin.inspectFuncJoin != nil {
+		mmJoin.inspectFuncJoin(ctx, address, wan)
+	}
+
+	mm_params := &ClientMockJoinParams{ctx, address, wan}
+
+	// Record call args
+	mmJoin.JoinMock.mutex.Lock()
+	mmJoin.JoinMock.callArgs = append(mmJoin.JoinMock.callArgs, mm_params)
+	mmJoin.JoinMock.mutex.Unlock()
+
+	for _, e := range mmJoin.JoinMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmJoin.JoinMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmJoin.JoinMock.defaultExpectation.Counter, 1)
+		mm_want := mmJoin.JoinMock.defaultExpectation.params
+		mm_got := ClientMockJoinParams{ctx, address, wan}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmJoin.t.Errorf("ClientMock.Join got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmJoin.JoinMock.defaultExpectation.results
+		if mm_results == nil {
+			mmJoin.t.Fatal("No results are set for the ClientMock.Join")
+		}
+		return (*mm_results).err
+	}
+	if mmJoin.funcJoin != nil {
+		return mmJoin.funcJoin(ctx, address, wan)
+	}
+	mmJoin.t.Fatalf("Unexpected call to ClientMock.Join. %v %v %v", ctx, address, wan)
+	return
+}
+
+// JoinAfterCounter returns a count of finished ClientMock.Join invocations
+func (mmJoin *ClientMock) JoinAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmJoin.afterJoinCounter)
+}
+
+// JoinBeforeCounter returns a count of ClientMock.Join invocations
+func (mmJoin *ClientMock) JoinBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmJoin.beforeJoinCounter)
+}
+
+// Calls returns a list of arguments used in each call to ClientMock.Join.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmJoin *mClientMockJoin) Calls() []*ClientMockJoinParams {
+	mmJoin.mutex.RLock()
+
+	argCopy := make([]*ClientMockJoinParams, len(mmJoin.callArgs))
+	copy(argCopy, mmJoin.callArgs)
+
+	mmJoin.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockJoinDone returns true if the count of the Join invocations corresponds
+// the number of defined expectations
+func (m *ClientMock) MinimockJoinDone() bool {
+	for _, e := range m.JoinMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.JoinMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterJoinCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcJoin != nil && mm_atomic.LoadUint64(&m.afterJoinCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockJoinInspect logs each unmet expectation
+func (m *ClientMock) MinimockJoinInspect() {
+	for _, e := range m.JoinMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ClientMock.Join with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.JoinMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterJoinCounter) < 1 {
+		if m.JoinMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ClientMock.Join")
+		} else {
+			m.t.Errorf("Expected call to ClientMock.Join with params: %#v", *m.JoinMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcJoin != nil && mm_atomic.LoadUint64(&m.afterJoinCounter) < 1 {
+		m.t.Error("Expected call to ClientMock.Join")
+	}
+}
+
 type mClientMockKeys struct {
 	mock               *ClientMock
 	defaultExpectation *ClientMockKeysExpectation
@@ -1137,8 +2014,9 @@ type ClientMockKeysExpectation struct {
 
 // ClientMockKeysParams contains parameters of the Client.Keys
 type ClientMockKeysParams struct {
-	dc   string
-	path string
+	c1 Ctx
+	s1 string
+	q1 Query
 }
 
 // ClientMockKeysResults contains results of the Client.Keys
@@ -1148,7 +2026,7 @@ type ClientMockKeysResults struct {
 }
 
 // Expect sets up expected params for Client.Keys
-func (mmKeys *mClientMockKeys) Expect(dc string, path string) *mClientMockKeys {
+func (mmKeys *mClientMockKeys) Expect(c1 Ctx, s1 string, q1 Query) *mClientMockKeys {
 	if mmKeys.mock.funcKeys != nil {
 		mmKeys.mock.t.Fatalf("ClientMock.Keys mock is already set by Set")
 	}
@@ -1157,12 +2035,23 @@ func (mmKeys *mClientMockKeys) Expect(dc string, path string) *mClientMockKeys {
 		mmKeys.defaultExpectation = &ClientMockKeysExpectation{}
 	}
 
-	mmKeys.defaultExpectation.params = &ClientMockKeysParams{dc, path}
+	mmKeys.defaultExpectation.params = &ClientMockKeysParams{c1, s1, q1}
 	for _, e := range mmKeys.expectations {
 		if minimock.Equal(e.params, mmKeys.defaultExpectation.params) {
 			mmKeys.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmKeys.defaultExpectation.params)
 		}
 	}
+
+	return mmKeys
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Keys
+func (mmKeys *mClientMockKeys) Inspect(f func(c1 Ctx, s1 string, q1 Query)) *mClientMockKeys {
+	if mmKeys.mock.inspectFuncKeys != nil {
+		mmKeys.mock.t.Fatalf("Inspect function is already set for ClientMock.Keys")
+	}
+
+	mmKeys.mock.inspectFuncKeys = f
 
 	return mmKeys
 }
@@ -1181,7 +2070,7 @@ func (mmKeys *mClientMockKeys) Return(sa1 []string, err error) *ClientMock {
 }
 
 //Set uses given function f to mock the Client.Keys method
-func (mmKeys *mClientMockKeys) Set(f func(dc string, path string) (sa1 []string, err error)) *ClientMock {
+func (mmKeys *mClientMockKeys) Set(f func(c1 Ctx, s1 string, q1 Query) (sa1 []string, err error)) *ClientMock {
 	if mmKeys.defaultExpectation != nil {
 		mmKeys.mock.t.Fatalf("Default expectation is already set for the Client.Keys method")
 	}
@@ -1196,14 +2085,14 @@ func (mmKeys *mClientMockKeys) Set(f func(dc string, path string) (sa1 []string,
 
 // When sets expectation for the Client.Keys which will trigger the result defined by the following
 // Then helper
-func (mmKeys *mClientMockKeys) When(dc string, path string) *ClientMockKeysExpectation {
+func (mmKeys *mClientMockKeys) When(c1 Ctx, s1 string, q1 Query) *ClientMockKeysExpectation {
 	if mmKeys.mock.funcKeys != nil {
 		mmKeys.mock.t.Fatalf("ClientMock.Keys mock is already set by Set")
 	}
 
 	expectation := &ClientMockKeysExpectation{
 		mock:   mmKeys.mock,
-		params: &ClientMockKeysParams{dc, path},
+		params: &ClientMockKeysParams{c1, s1, q1},
 	}
 	mmKeys.expectations = append(mmKeys.expectations, expectation)
 	return expectation
@@ -1216,19 +2105,23 @@ func (e *ClientMockKeysExpectation) Then(sa1 []string, err error) *ClientMock {
 }
 
 // Keys implements Client
-func (mmKeys *ClientMock) Keys(dc string, path string) (sa1 []string, err error) {
+func (mmKeys *ClientMock) Keys(c1 Ctx, s1 string, q1 Query) (sa1 []string, err error) {
 	mm_atomic.AddUint64(&mmKeys.beforeKeysCounter, 1)
 	defer mm_atomic.AddUint64(&mmKeys.afterKeysCounter, 1)
 
-	params := &ClientMockKeysParams{dc, path}
+	if mmKeys.inspectFuncKeys != nil {
+		mmKeys.inspectFuncKeys(c1, s1, q1)
+	}
+
+	mm_params := &ClientMockKeysParams{c1, s1, q1}
 
 	// Record call args
 	mmKeys.KeysMock.mutex.Lock()
-	mmKeys.KeysMock.callArgs = append(mmKeys.KeysMock.callArgs, params)
+	mmKeys.KeysMock.callArgs = append(mmKeys.KeysMock.callArgs, mm_params)
 	mmKeys.KeysMock.mutex.Unlock()
 
 	for _, e := range mmKeys.KeysMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.sa1, e.results.err
 		}
@@ -1236,22 +2129,22 @@ func (mmKeys *ClientMock) Keys(dc string, path string) (sa1 []string, err error)
 
 	if mmKeys.KeysMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmKeys.KeysMock.defaultExpectation.Counter, 1)
-		want := mmKeys.KeysMock.defaultExpectation.params
-		got := ClientMockKeysParams{dc, path}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmKeys.t.Errorf("ClientMock.Keys got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmKeys.KeysMock.defaultExpectation.params
+		mm_got := ClientMockKeysParams{c1, s1, q1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmKeys.t.Errorf("ClientMock.Keys got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmKeys.KeysMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmKeys.KeysMock.defaultExpectation.results
+		if mm_results == nil {
 			mmKeys.t.Fatal("No results are set for the ClientMock.Keys")
 		}
-		return (*results).sa1, (*results).err
+		return (*mm_results).sa1, (*mm_results).err
 	}
 	if mmKeys.funcKeys != nil {
-		return mmKeys.funcKeys(dc, path)
+		return mmKeys.funcKeys(c1, s1, q1)
 	}
-	mmKeys.t.Fatalf("Unexpected call to ClientMock.Keys. %v %v", dc, path)
+	mmKeys.t.Fatalf("Unexpected call to ClientMock.Keys. %v %v %v", c1, s1, q1)
 	return
 }
 
@@ -1320,6 +2213,221 @@ func (m *ClientMock) MinimockKeysInspect() {
 	}
 }
 
+type mClientMockLeave struct {
+	mock               *ClientMock
+	defaultExpectation *ClientMockLeaveExpectation
+	expectations       []*ClientMockLeaveExpectation
+
+	callArgs []*ClientMockLeaveParams
+	mutex    sync.RWMutex
+}
+
+// ClientMockLeaveExpectation specifies expectation struct of the Client.Leave
+type ClientMockLeaveExpectation struct {
+	mock    *ClientMock
+	params  *ClientMockLeaveParams
+	results *ClientMockLeaveResults
+	Counter uint64
+}
+
+// ClientMockLeaveParams contains parameters of the Client.Leave
+type ClientMockLeaveParams struct {
+	ctx Ctx
+}
+
+// ClientMockLeaveResults contains results of the Client.Leave
+type ClientMockLeaveResults struct {
+	err error
+}
+
+// Expect sets up expected params for Client.Leave
+func (mmLeave *mClientMockLeave) Expect(ctx Ctx) *mClientMockLeave {
+	if mmLeave.mock.funcLeave != nil {
+		mmLeave.mock.t.Fatalf("ClientMock.Leave mock is already set by Set")
+	}
+
+	if mmLeave.defaultExpectation == nil {
+		mmLeave.defaultExpectation = &ClientMockLeaveExpectation{}
+	}
+
+	mmLeave.defaultExpectation.params = &ClientMockLeaveParams{ctx}
+	for _, e := range mmLeave.expectations {
+		if minimock.Equal(e.params, mmLeave.defaultExpectation.params) {
+			mmLeave.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmLeave.defaultExpectation.params)
+		}
+	}
+
+	return mmLeave
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Leave
+func (mmLeave *mClientMockLeave) Inspect(f func(ctx Ctx)) *mClientMockLeave {
+	if mmLeave.mock.inspectFuncLeave != nil {
+		mmLeave.mock.t.Fatalf("Inspect function is already set for ClientMock.Leave")
+	}
+
+	mmLeave.mock.inspectFuncLeave = f
+
+	return mmLeave
+}
+
+// Return sets up results that will be returned by Client.Leave
+func (mmLeave *mClientMockLeave) Return(err error) *ClientMock {
+	if mmLeave.mock.funcLeave != nil {
+		mmLeave.mock.t.Fatalf("ClientMock.Leave mock is already set by Set")
+	}
+
+	if mmLeave.defaultExpectation == nil {
+		mmLeave.defaultExpectation = &ClientMockLeaveExpectation{mock: mmLeave.mock}
+	}
+	mmLeave.defaultExpectation.results = &ClientMockLeaveResults{err}
+	return mmLeave.mock
+}
+
+//Set uses given function f to mock the Client.Leave method
+func (mmLeave *mClientMockLeave) Set(f func(ctx Ctx) (err error)) *ClientMock {
+	if mmLeave.defaultExpectation != nil {
+		mmLeave.mock.t.Fatalf("Default expectation is already set for the Client.Leave method")
+	}
+
+	if len(mmLeave.expectations) > 0 {
+		mmLeave.mock.t.Fatalf("Some expectations are already set for the Client.Leave method")
+	}
+
+	mmLeave.mock.funcLeave = f
+	return mmLeave.mock
+}
+
+// When sets expectation for the Client.Leave which will trigger the result defined by the following
+// Then helper
+func (mmLeave *mClientMockLeave) When(ctx Ctx) *ClientMockLeaveExpectation {
+	if mmLeave.mock.funcLeave != nil {
+		mmLeave.mock.t.Fatalf("ClientMock.Leave mock is already set by Set")
+	}
+
+	expectation := &ClientMockLeaveExpectation{
+		mock:   mmLeave.mock,
+		params: &ClientMockLeaveParams{ctx},
+	}
+	mmLeave.expectations = append(mmLeave.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Client.Leave return parameters for the expectation previously defined by the When method
+func (e *ClientMockLeaveExpectation) Then(err error) *ClientMock {
+	e.results = &ClientMockLeaveResults{err}
+	return e.mock
+}
+
+// Leave implements Client
+func (mmLeave *ClientMock) Leave(ctx Ctx) (err error) {
+	mm_atomic.AddUint64(&mmLeave.beforeLeaveCounter, 1)
+	defer mm_atomic.AddUint64(&mmLeave.afterLeaveCounter, 1)
+
+	if mmLeave.inspectFuncLeave != nil {
+		mmLeave.inspectFuncLeave(ctx)
+	}
+
+	mm_params := &ClientMockLeaveParams{ctx}
+
+	// Record call args
+	mmLeave.LeaveMock.mutex.Lock()
+	mmLeave.LeaveMock.callArgs = append(mmLeave.LeaveMock.callArgs, mm_params)
+	mmLeave.LeaveMock.mutex.Unlock()
+
+	for _, e := range mmLeave.LeaveMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmLeave.LeaveMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmLeave.LeaveMock.defaultExpectation.Counter, 1)
+		mm_want := mmLeave.LeaveMock.defaultExpectation.params
+		mm_got := ClientMockLeaveParams{ctx}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmLeave.t.Errorf("ClientMock.Leave got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmLeave.LeaveMock.defaultExpectation.results
+		if mm_results == nil {
+			mmLeave.t.Fatal("No results are set for the ClientMock.Leave")
+		}
+		return (*mm_results).err
+	}
+	if mmLeave.funcLeave != nil {
+		return mmLeave.funcLeave(ctx)
+	}
+	mmLeave.t.Fatalf("Unexpected call to ClientMock.Leave. %v", ctx)
+	return
+}
+
+// LeaveAfterCounter returns a count of finished ClientMock.Leave invocations
+func (mmLeave *ClientMock) LeaveAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmLeave.afterLeaveCounter)
+}
+
+// LeaveBeforeCounter returns a count of ClientMock.Leave invocations
+func (mmLeave *ClientMock) LeaveBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmLeave.beforeLeaveCounter)
+}
+
+// Calls returns a list of arguments used in each call to ClientMock.Leave.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmLeave *mClientMockLeave) Calls() []*ClientMockLeaveParams {
+	mmLeave.mutex.RLock()
+
+	argCopy := make([]*ClientMockLeaveParams, len(mmLeave.callArgs))
+	copy(argCopy, mmLeave.callArgs)
+
+	mmLeave.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockLeaveDone returns true if the count of the Leave invocations corresponds
+// the number of defined expectations
+func (m *ClientMock) MinimockLeaveDone() bool {
+	for _, e := range m.LeaveMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.LeaveMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterLeaveCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcLeave != nil && mm_atomic.LoadUint64(&m.afterLeaveCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockLeaveInspect logs each unmet expectation
+func (m *ClientMock) MinimockLeaveInspect() {
+	for _, e := range m.LeaveMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ClientMock.Leave with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.LeaveMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterLeaveCounter) < 1 {
+		if m.LeaveMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ClientMock.Leave")
+		} else {
+			m.t.Errorf("Expected call to ClientMock.Leave with params: %#v", *m.LeaveMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcLeave != nil && mm_atomic.LoadUint64(&m.afterLeaveCounter) < 1 {
+		m.t.Error("Expected call to ClientMock.Leave")
+	}
+}
+
 type mClientMockListSessions struct {
 	mock               *ClientMock
 	defaultExpectation *ClientMockListSessionsExpectation
@@ -1339,6 +2447,7 @@ type ClientMockListSessionsExpectation struct {
 
 // ClientMockListSessionsParams contains parameters of the Client.ListSessions
 type ClientMockListSessionsParams struct {
+	ctx  Ctx
 	dc   string
 	node string
 }
@@ -1350,7 +2459,7 @@ type ClientMockListSessionsResults struct {
 }
 
 // Expect sets up expected params for Client.ListSessions
-func (mmListSessions *mClientMockListSessions) Expect(dc string, node string) *mClientMockListSessions {
+func (mmListSessions *mClientMockListSessions) Expect(ctx Ctx, dc string, node string) *mClientMockListSessions {
 	if mmListSessions.mock.funcListSessions != nil {
 		mmListSessions.mock.t.Fatalf("ClientMock.ListSessions mock is already set by Set")
 	}
@@ -1359,12 +2468,23 @@ func (mmListSessions *mClientMockListSessions) Expect(dc string, node string) *m
 		mmListSessions.defaultExpectation = &ClientMockListSessionsExpectation{}
 	}
 
-	mmListSessions.defaultExpectation.params = &ClientMockListSessionsParams{dc, node}
+	mmListSessions.defaultExpectation.params = &ClientMockListSessionsParams{ctx, dc, node}
 	for _, e := range mmListSessions.expectations {
 		if minimock.Equal(e.params, mmListSessions.defaultExpectation.params) {
 			mmListSessions.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmListSessions.defaultExpectation.params)
 		}
 	}
+
+	return mmListSessions
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.ListSessions
+func (mmListSessions *mClientMockListSessions) Inspect(f func(ctx Ctx, dc string, node string)) *mClientMockListSessions {
+	if mmListSessions.mock.inspectFuncListSessions != nil {
+		mmListSessions.mock.t.Fatalf("Inspect function is already set for ClientMock.ListSessions")
+	}
+
+	mmListSessions.mock.inspectFuncListSessions = f
 
 	return mmListSessions
 }
@@ -1383,7 +2503,7 @@ func (mmListSessions *mClientMockListSessions) Return(m1 map[SessionID]SessionCo
 }
 
 //Set uses given function f to mock the Client.ListSessions method
-func (mmListSessions *mClientMockListSessions) Set(f func(dc string, node string) (m1 map[SessionID]SessionConfig, err error)) *ClientMock {
+func (mmListSessions *mClientMockListSessions) Set(f func(ctx Ctx, dc string, node string) (m1 map[SessionID]SessionConfig, err error)) *ClientMock {
 	if mmListSessions.defaultExpectation != nil {
 		mmListSessions.mock.t.Fatalf("Default expectation is already set for the Client.ListSessions method")
 	}
@@ -1398,14 +2518,14 @@ func (mmListSessions *mClientMockListSessions) Set(f func(dc string, node string
 
 // When sets expectation for the Client.ListSessions which will trigger the result defined by the following
 // Then helper
-func (mmListSessions *mClientMockListSessions) When(dc string, node string) *ClientMockListSessionsExpectation {
+func (mmListSessions *mClientMockListSessions) When(ctx Ctx, dc string, node string) *ClientMockListSessionsExpectation {
 	if mmListSessions.mock.funcListSessions != nil {
 		mmListSessions.mock.t.Fatalf("ClientMock.ListSessions mock is already set by Set")
 	}
 
 	expectation := &ClientMockListSessionsExpectation{
 		mock:   mmListSessions.mock,
-		params: &ClientMockListSessionsParams{dc, node},
+		params: &ClientMockListSessionsParams{ctx, dc, node},
 	}
 	mmListSessions.expectations = append(mmListSessions.expectations, expectation)
 	return expectation
@@ -1418,19 +2538,23 @@ func (e *ClientMockListSessionsExpectation) Then(m1 map[SessionID]SessionConfig,
 }
 
 // ListSessions implements Client
-func (mmListSessions *ClientMock) ListSessions(dc string, node string) (m1 map[SessionID]SessionConfig, err error) {
+func (mmListSessions *ClientMock) ListSessions(ctx Ctx, dc string, node string) (m1 map[SessionID]SessionConfig, err error) {
 	mm_atomic.AddUint64(&mmListSessions.beforeListSessionsCounter, 1)
 	defer mm_atomic.AddUint64(&mmListSessions.afterListSessionsCounter, 1)
 
-	params := &ClientMockListSessionsParams{dc, node}
+	if mmListSessions.inspectFuncListSessions != nil {
+		mmListSessions.inspectFuncListSessions(ctx, dc, node)
+	}
+
+	mm_params := &ClientMockListSessionsParams{ctx, dc, node}
 
 	// Record call args
 	mmListSessions.ListSessionsMock.mutex.Lock()
-	mmListSessions.ListSessionsMock.callArgs = append(mmListSessions.ListSessionsMock.callArgs, params)
+	mmListSessions.ListSessionsMock.callArgs = append(mmListSessions.ListSessionsMock.callArgs, mm_params)
 	mmListSessions.ListSessionsMock.mutex.Unlock()
 
 	for _, e := range mmListSessions.ListSessionsMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.m1, e.results.err
 		}
@@ -1438,22 +2562,22 @@ func (mmListSessions *ClientMock) ListSessions(dc string, node string) (m1 map[S
 
 	if mmListSessions.ListSessionsMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmListSessions.ListSessionsMock.defaultExpectation.Counter, 1)
-		want := mmListSessions.ListSessionsMock.defaultExpectation.params
-		got := ClientMockListSessionsParams{dc, node}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmListSessions.t.Errorf("ClientMock.ListSessions got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmListSessions.ListSessionsMock.defaultExpectation.params
+		mm_got := ClientMockListSessionsParams{ctx, dc, node}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmListSessions.t.Errorf("ClientMock.ListSessions got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmListSessions.ListSessionsMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmListSessions.ListSessionsMock.defaultExpectation.results
+		if mm_results == nil {
 			mmListSessions.t.Fatal("No results are set for the ClientMock.ListSessions")
 		}
-		return (*results).m1, (*results).err
+		return (*mm_results).m1, (*mm_results).err
 	}
 	if mmListSessions.funcListSessions != nil {
-		return mmListSessions.funcListSessions(dc, node)
+		return mmListSessions.funcListSessions(ctx, dc, node)
 	}
-	mmListSessions.t.Fatalf("Unexpected call to ClientMock.ListSessions. %v %v", dc, node)
+	mmListSessions.t.Fatalf("Unexpected call to ClientMock.ListSessions. %v %v %v", ctx, dc, node)
 	return
 }
 
@@ -1541,6 +2665,7 @@ type ClientMockMaintenanceModeExpectation struct {
 
 // ClientMockMaintenanceModeParams contains parameters of the Client.MaintenanceMode
 type ClientMockMaintenanceModeParams struct {
+	ctx     Ctx
 	enabled bool
 	reason  string
 }
@@ -1551,7 +2676,7 @@ type ClientMockMaintenanceModeResults struct {
 }
 
 // Expect sets up expected params for Client.MaintenanceMode
-func (mmMaintenanceMode *mClientMockMaintenanceMode) Expect(enabled bool, reason string) *mClientMockMaintenanceMode {
+func (mmMaintenanceMode *mClientMockMaintenanceMode) Expect(ctx Ctx, enabled bool, reason string) *mClientMockMaintenanceMode {
 	if mmMaintenanceMode.mock.funcMaintenanceMode != nil {
 		mmMaintenanceMode.mock.t.Fatalf("ClientMock.MaintenanceMode mock is already set by Set")
 	}
@@ -1560,12 +2685,23 @@ func (mmMaintenanceMode *mClientMockMaintenanceMode) Expect(enabled bool, reason
 		mmMaintenanceMode.defaultExpectation = &ClientMockMaintenanceModeExpectation{}
 	}
 
-	mmMaintenanceMode.defaultExpectation.params = &ClientMockMaintenanceModeParams{enabled, reason}
+	mmMaintenanceMode.defaultExpectation.params = &ClientMockMaintenanceModeParams{ctx, enabled, reason}
 	for _, e := range mmMaintenanceMode.expectations {
 		if minimock.Equal(e.params, mmMaintenanceMode.defaultExpectation.params) {
 			mmMaintenanceMode.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmMaintenanceMode.defaultExpectation.params)
 		}
 	}
+
+	return mmMaintenanceMode
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.MaintenanceMode
+func (mmMaintenanceMode *mClientMockMaintenanceMode) Inspect(f func(ctx Ctx, enabled bool, reason string)) *mClientMockMaintenanceMode {
+	if mmMaintenanceMode.mock.inspectFuncMaintenanceMode != nil {
+		mmMaintenanceMode.mock.t.Fatalf("Inspect function is already set for ClientMock.MaintenanceMode")
+	}
+
+	mmMaintenanceMode.mock.inspectFuncMaintenanceMode = f
 
 	return mmMaintenanceMode
 }
@@ -1584,7 +2720,7 @@ func (mmMaintenanceMode *mClientMockMaintenanceMode) Return(err error) *ClientMo
 }
 
 //Set uses given function f to mock the Client.MaintenanceMode method
-func (mmMaintenanceMode *mClientMockMaintenanceMode) Set(f func(enabled bool, reason string) (err error)) *ClientMock {
+func (mmMaintenanceMode *mClientMockMaintenanceMode) Set(f func(ctx Ctx, enabled bool, reason string) (err error)) *ClientMock {
 	if mmMaintenanceMode.defaultExpectation != nil {
 		mmMaintenanceMode.mock.t.Fatalf("Default expectation is already set for the Client.MaintenanceMode method")
 	}
@@ -1599,14 +2735,14 @@ func (mmMaintenanceMode *mClientMockMaintenanceMode) Set(f func(enabled bool, re
 
 // When sets expectation for the Client.MaintenanceMode which will trigger the result defined by the following
 // Then helper
-func (mmMaintenanceMode *mClientMockMaintenanceMode) When(enabled bool, reason string) *ClientMockMaintenanceModeExpectation {
+func (mmMaintenanceMode *mClientMockMaintenanceMode) When(ctx Ctx, enabled bool, reason string) *ClientMockMaintenanceModeExpectation {
 	if mmMaintenanceMode.mock.funcMaintenanceMode != nil {
 		mmMaintenanceMode.mock.t.Fatalf("ClientMock.MaintenanceMode mock is already set by Set")
 	}
 
 	expectation := &ClientMockMaintenanceModeExpectation{
 		mock:   mmMaintenanceMode.mock,
-		params: &ClientMockMaintenanceModeParams{enabled, reason},
+		params: &ClientMockMaintenanceModeParams{ctx, enabled, reason},
 	}
 	mmMaintenanceMode.expectations = append(mmMaintenanceMode.expectations, expectation)
 	return expectation
@@ -1619,19 +2755,23 @@ func (e *ClientMockMaintenanceModeExpectation) Then(err error) *ClientMock {
 }
 
 // MaintenanceMode implements Client
-func (mmMaintenanceMode *ClientMock) MaintenanceMode(enabled bool, reason string) (err error) {
+func (mmMaintenanceMode *ClientMock) MaintenanceMode(ctx Ctx, enabled bool, reason string) (err error) {
 	mm_atomic.AddUint64(&mmMaintenanceMode.beforeMaintenanceModeCounter, 1)
 	defer mm_atomic.AddUint64(&mmMaintenanceMode.afterMaintenanceModeCounter, 1)
 
-	params := &ClientMockMaintenanceModeParams{enabled, reason}
+	if mmMaintenanceMode.inspectFuncMaintenanceMode != nil {
+		mmMaintenanceMode.inspectFuncMaintenanceMode(ctx, enabled, reason)
+	}
+
+	mm_params := &ClientMockMaintenanceModeParams{ctx, enabled, reason}
 
 	// Record call args
 	mmMaintenanceMode.MaintenanceModeMock.mutex.Lock()
-	mmMaintenanceMode.MaintenanceModeMock.callArgs = append(mmMaintenanceMode.MaintenanceModeMock.callArgs, params)
+	mmMaintenanceMode.MaintenanceModeMock.callArgs = append(mmMaintenanceMode.MaintenanceModeMock.callArgs, mm_params)
 	mmMaintenanceMode.MaintenanceModeMock.mutex.Unlock()
 
 	for _, e := range mmMaintenanceMode.MaintenanceModeMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.err
 		}
@@ -1639,22 +2779,22 @@ func (mmMaintenanceMode *ClientMock) MaintenanceMode(enabled bool, reason string
 
 	if mmMaintenanceMode.MaintenanceModeMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmMaintenanceMode.MaintenanceModeMock.defaultExpectation.Counter, 1)
-		want := mmMaintenanceMode.MaintenanceModeMock.defaultExpectation.params
-		got := ClientMockMaintenanceModeParams{enabled, reason}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmMaintenanceMode.t.Errorf("ClientMock.MaintenanceMode got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmMaintenanceMode.MaintenanceModeMock.defaultExpectation.params
+		mm_got := ClientMockMaintenanceModeParams{ctx, enabled, reason}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmMaintenanceMode.t.Errorf("ClientMock.MaintenanceMode got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmMaintenanceMode.MaintenanceModeMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmMaintenanceMode.MaintenanceModeMock.defaultExpectation.results
+		if mm_results == nil {
 			mmMaintenanceMode.t.Fatal("No results are set for the ClientMock.MaintenanceMode")
 		}
-		return (*results).err
+		return (*mm_results).err
 	}
 	if mmMaintenanceMode.funcMaintenanceMode != nil {
-		return mmMaintenanceMode.funcMaintenanceMode(enabled, reason)
+		return mmMaintenanceMode.funcMaintenanceMode(ctx, enabled, reason)
 	}
-	mmMaintenanceMode.t.Fatalf("Unexpected call to ClientMock.MaintenanceMode. %v %v", enabled, reason)
+	mmMaintenanceMode.t.Fatalf("Unexpected call to ClientMock.MaintenanceMode. %v %v %v", ctx, enabled, reason)
 	return
 }
 
@@ -1742,6 +2882,7 @@ type ClientMockMembersExpectation struct {
 
 // ClientMockMembersParams contains parameters of the Client.Members
 type ClientMockMembersParams struct {
+	ctx Ctx
 	wan bool
 }
 
@@ -1752,7 +2893,7 @@ type ClientMockMembersResults struct {
 }
 
 // Expect sets up expected params for Client.Members
-func (mmMembers *mClientMockMembers) Expect(wan bool) *mClientMockMembers {
+func (mmMembers *mClientMockMembers) Expect(ctx Ctx, wan bool) *mClientMockMembers {
 	if mmMembers.mock.funcMembers != nil {
 		mmMembers.mock.t.Fatalf("ClientMock.Members mock is already set by Set")
 	}
@@ -1761,12 +2902,23 @@ func (mmMembers *mClientMockMembers) Expect(wan bool) *mClientMockMembers {
 		mmMembers.defaultExpectation = &ClientMockMembersExpectation{}
 	}
 
-	mmMembers.defaultExpectation.params = &ClientMockMembersParams{wan}
+	mmMembers.defaultExpectation.params = &ClientMockMembersParams{ctx, wan}
 	for _, e := range mmMembers.expectations {
 		if minimock.Equal(e.params, mmMembers.defaultExpectation.params) {
 			mmMembers.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmMembers.defaultExpectation.params)
 		}
 	}
+
+	return mmMembers
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Members
+func (mmMembers *mClientMockMembers) Inspect(f func(ctx Ctx, wan bool)) *mClientMockMembers {
+	if mmMembers.mock.inspectFuncMembers != nil {
+		mmMembers.mock.t.Fatalf("Inspect function is already set for ClientMock.Members")
+	}
+
+	mmMembers.mock.inspectFuncMembers = f
 
 	return mmMembers
 }
@@ -1785,7 +2937,7 @@ func (mmMembers *mClientMockMembers) Return(aa1 []AgentInfo, err error) *ClientM
 }
 
 //Set uses given function f to mock the Client.Members method
-func (mmMembers *mClientMockMembers) Set(f func(wan bool) (aa1 []AgentInfo, err error)) *ClientMock {
+func (mmMembers *mClientMockMembers) Set(f func(ctx Ctx, wan bool) (aa1 []AgentInfo, err error)) *ClientMock {
 	if mmMembers.defaultExpectation != nil {
 		mmMembers.mock.t.Fatalf("Default expectation is already set for the Client.Members method")
 	}
@@ -1800,14 +2952,14 @@ func (mmMembers *mClientMockMembers) Set(f func(wan bool) (aa1 []AgentInfo, err 
 
 // When sets expectation for the Client.Members which will trigger the result defined by the following
 // Then helper
-func (mmMembers *mClientMockMembers) When(wan bool) *ClientMockMembersExpectation {
+func (mmMembers *mClientMockMembers) When(ctx Ctx, wan bool) *ClientMockMembersExpectation {
 	if mmMembers.mock.funcMembers != nil {
 		mmMembers.mock.t.Fatalf("ClientMock.Members mock is already set by Set")
 	}
 
 	expectation := &ClientMockMembersExpectation{
 		mock:   mmMembers.mock,
-		params: &ClientMockMembersParams{wan},
+		params: &ClientMockMembersParams{ctx, wan},
 	}
 	mmMembers.expectations = append(mmMembers.expectations, expectation)
 	return expectation
@@ -1820,19 +2972,23 @@ func (e *ClientMockMembersExpectation) Then(aa1 []AgentInfo, err error) *ClientM
 }
 
 // Members implements Client
-func (mmMembers *ClientMock) Members(wan bool) (aa1 []AgentInfo, err error) {
+func (mmMembers *ClientMock) Members(ctx Ctx, wan bool) (aa1 []AgentInfo, err error) {
 	mm_atomic.AddUint64(&mmMembers.beforeMembersCounter, 1)
 	defer mm_atomic.AddUint64(&mmMembers.afterMembersCounter, 1)
 
-	params := &ClientMockMembersParams{wan}
+	if mmMembers.inspectFuncMembers != nil {
+		mmMembers.inspectFuncMembers(ctx, wan)
+	}
+
+	mm_params := &ClientMockMembersParams{ctx, wan}
 
 	// Record call args
 	mmMembers.MembersMock.mutex.Lock()
-	mmMembers.MembersMock.callArgs = append(mmMembers.MembersMock.callArgs, params)
+	mmMembers.MembersMock.callArgs = append(mmMembers.MembersMock.callArgs, mm_params)
 	mmMembers.MembersMock.mutex.Unlock()
 
 	for _, e := range mmMembers.MembersMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.aa1, e.results.err
 		}
@@ -1840,22 +2996,22 @@ func (mmMembers *ClientMock) Members(wan bool) (aa1 []AgentInfo, err error) {
 
 	if mmMembers.MembersMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmMembers.MembersMock.defaultExpectation.Counter, 1)
-		want := mmMembers.MembersMock.defaultExpectation.params
-		got := ClientMockMembersParams{wan}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmMembers.t.Errorf("ClientMock.Members got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmMembers.MembersMock.defaultExpectation.params
+		mm_got := ClientMockMembersParams{ctx, wan}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmMembers.t.Errorf("ClientMock.Members got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmMembers.MembersMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmMembers.MembersMock.defaultExpectation.results
+		if mm_results == nil {
 			mmMembers.t.Fatal("No results are set for the ClientMock.Members")
 		}
-		return (*results).aa1, (*results).err
+		return (*mm_results).aa1, (*mm_results).err
 	}
 	if mmMembers.funcMembers != nil {
-		return mmMembers.funcMembers(wan)
+		return mmMembers.funcMembers(ctx, wan)
 	}
-	mmMembers.t.Fatalf("Unexpected call to ClientMock.Members. %v", wan)
+	mmMembers.t.Fatalf("Unexpected call to ClientMock.Members. %v %v", ctx, wan)
 	return
 }
 
@@ -1924,6 +3080,222 @@ func (m *ClientMock) MinimockMembersInspect() {
 	}
 }
 
+type mClientMockMetrics struct {
+	mock               *ClientMock
+	defaultExpectation *ClientMockMetricsExpectation
+	expectations       []*ClientMockMetricsExpectation
+
+	callArgs []*ClientMockMetricsParams
+	mutex    sync.RWMutex
+}
+
+// ClientMockMetricsExpectation specifies expectation struct of the Client.Metrics
+type ClientMockMetricsExpectation struct {
+	mock    *ClientMock
+	params  *ClientMockMetricsParams
+	results *ClientMockMetricsResults
+	Counter uint64
+}
+
+// ClientMockMetricsParams contains parameters of the Client.Metrics
+type ClientMockMetricsParams struct {
+	ctx Ctx
+}
+
+// ClientMockMetricsResults contains results of the Client.Metrics
+type ClientMockMetricsResults struct {
+	m1  Metrics
+	err error
+}
+
+// Expect sets up expected params for Client.Metrics
+func (mmMetrics *mClientMockMetrics) Expect(ctx Ctx) *mClientMockMetrics {
+	if mmMetrics.mock.funcMetrics != nil {
+		mmMetrics.mock.t.Fatalf("ClientMock.Metrics mock is already set by Set")
+	}
+
+	if mmMetrics.defaultExpectation == nil {
+		mmMetrics.defaultExpectation = &ClientMockMetricsExpectation{}
+	}
+
+	mmMetrics.defaultExpectation.params = &ClientMockMetricsParams{ctx}
+	for _, e := range mmMetrics.expectations {
+		if minimock.Equal(e.params, mmMetrics.defaultExpectation.params) {
+			mmMetrics.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmMetrics.defaultExpectation.params)
+		}
+	}
+
+	return mmMetrics
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Metrics
+func (mmMetrics *mClientMockMetrics) Inspect(f func(ctx Ctx)) *mClientMockMetrics {
+	if mmMetrics.mock.inspectFuncMetrics != nil {
+		mmMetrics.mock.t.Fatalf("Inspect function is already set for ClientMock.Metrics")
+	}
+
+	mmMetrics.mock.inspectFuncMetrics = f
+
+	return mmMetrics
+}
+
+// Return sets up results that will be returned by Client.Metrics
+func (mmMetrics *mClientMockMetrics) Return(m1 Metrics, err error) *ClientMock {
+	if mmMetrics.mock.funcMetrics != nil {
+		mmMetrics.mock.t.Fatalf("ClientMock.Metrics mock is already set by Set")
+	}
+
+	if mmMetrics.defaultExpectation == nil {
+		mmMetrics.defaultExpectation = &ClientMockMetricsExpectation{mock: mmMetrics.mock}
+	}
+	mmMetrics.defaultExpectation.results = &ClientMockMetricsResults{m1, err}
+	return mmMetrics.mock
+}
+
+//Set uses given function f to mock the Client.Metrics method
+func (mmMetrics *mClientMockMetrics) Set(f func(ctx Ctx) (m1 Metrics, err error)) *ClientMock {
+	if mmMetrics.defaultExpectation != nil {
+		mmMetrics.mock.t.Fatalf("Default expectation is already set for the Client.Metrics method")
+	}
+
+	if len(mmMetrics.expectations) > 0 {
+		mmMetrics.mock.t.Fatalf("Some expectations are already set for the Client.Metrics method")
+	}
+
+	mmMetrics.mock.funcMetrics = f
+	return mmMetrics.mock
+}
+
+// When sets expectation for the Client.Metrics which will trigger the result defined by the following
+// Then helper
+func (mmMetrics *mClientMockMetrics) When(ctx Ctx) *ClientMockMetricsExpectation {
+	if mmMetrics.mock.funcMetrics != nil {
+		mmMetrics.mock.t.Fatalf("ClientMock.Metrics mock is already set by Set")
+	}
+
+	expectation := &ClientMockMetricsExpectation{
+		mock:   mmMetrics.mock,
+		params: &ClientMockMetricsParams{ctx},
+	}
+	mmMetrics.expectations = append(mmMetrics.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Client.Metrics return parameters for the expectation previously defined by the When method
+func (e *ClientMockMetricsExpectation) Then(m1 Metrics, err error) *ClientMock {
+	e.results = &ClientMockMetricsResults{m1, err}
+	return e.mock
+}
+
+// Metrics implements Client
+func (mmMetrics *ClientMock) Metrics(ctx Ctx) (m1 Metrics, err error) {
+	mm_atomic.AddUint64(&mmMetrics.beforeMetricsCounter, 1)
+	defer mm_atomic.AddUint64(&mmMetrics.afterMetricsCounter, 1)
+
+	if mmMetrics.inspectFuncMetrics != nil {
+		mmMetrics.inspectFuncMetrics(ctx)
+	}
+
+	mm_params := &ClientMockMetricsParams{ctx}
+
+	// Record call args
+	mmMetrics.MetricsMock.mutex.Lock()
+	mmMetrics.MetricsMock.callArgs = append(mmMetrics.MetricsMock.callArgs, mm_params)
+	mmMetrics.MetricsMock.mutex.Unlock()
+
+	for _, e := range mmMetrics.MetricsMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.m1, e.results.err
+		}
+	}
+
+	if mmMetrics.MetricsMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmMetrics.MetricsMock.defaultExpectation.Counter, 1)
+		mm_want := mmMetrics.MetricsMock.defaultExpectation.params
+		mm_got := ClientMockMetricsParams{ctx}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmMetrics.t.Errorf("ClientMock.Metrics got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmMetrics.MetricsMock.defaultExpectation.results
+		if mm_results == nil {
+			mmMetrics.t.Fatal("No results are set for the ClientMock.Metrics")
+		}
+		return (*mm_results).m1, (*mm_results).err
+	}
+	if mmMetrics.funcMetrics != nil {
+		return mmMetrics.funcMetrics(ctx)
+	}
+	mmMetrics.t.Fatalf("Unexpected call to ClientMock.Metrics. %v", ctx)
+	return
+}
+
+// MetricsAfterCounter returns a count of finished ClientMock.Metrics invocations
+func (mmMetrics *ClientMock) MetricsAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmMetrics.afterMetricsCounter)
+}
+
+// MetricsBeforeCounter returns a count of ClientMock.Metrics invocations
+func (mmMetrics *ClientMock) MetricsBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmMetrics.beforeMetricsCounter)
+}
+
+// Calls returns a list of arguments used in each call to ClientMock.Metrics.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmMetrics *mClientMockMetrics) Calls() []*ClientMockMetricsParams {
+	mmMetrics.mutex.RLock()
+
+	argCopy := make([]*ClientMockMetricsParams, len(mmMetrics.callArgs))
+	copy(argCopy, mmMetrics.callArgs)
+
+	mmMetrics.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockMetricsDone returns true if the count of the Metrics invocations corresponds
+// the number of defined expectations
+func (m *ClientMock) MinimockMetricsDone() bool {
+	for _, e := range m.MetricsMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.MetricsMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterMetricsCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcMetrics != nil && mm_atomic.LoadUint64(&m.afterMetricsCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockMetricsInspect logs each unmet expectation
+func (m *ClientMock) MinimockMetricsInspect() {
+	for _, e := range m.MetricsMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ClientMock.Metrics with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.MetricsMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterMetricsCounter) < 1 {
+		if m.MetricsMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ClientMock.Metrics")
+		} else {
+			m.t.Errorf("Expected call to ClientMock.Metrics with params: %#v", *m.MetricsMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcMetrics != nil && mm_atomic.LoadUint64(&m.afterMetricsCounter) < 1 {
+		m.t.Error("Expected call to ClientMock.Metrics")
+	}
+}
+
 type mClientMockNode struct {
 	mock               *ClientMock
 	defaultExpectation *ClientMockNodeExpectation
@@ -1943,18 +3315,19 @@ type ClientMockNodeExpectation struct {
 
 // ClientMockNodeParams contains parameters of the Client.Node
 type ClientMockNodeParams struct {
-	dc   string
-	name string
+	c1 Ctx
+	s1 string
+	n1 NodeQuery
 }
 
 // ClientMockNodeResults contains results of the Client.Node
 type ClientMockNodeResults struct {
-	n1  NodeInfo
+	n2  NodeInfo
 	err error
 }
 
 // Expect sets up expected params for Client.Node
-func (mmNode *mClientMockNode) Expect(dc string, name string) *mClientMockNode {
+func (mmNode *mClientMockNode) Expect(c1 Ctx, s1 string, n1 NodeQuery) *mClientMockNode {
 	if mmNode.mock.funcNode != nil {
 		mmNode.mock.t.Fatalf("ClientMock.Node mock is already set by Set")
 	}
@@ -1963,7 +3336,7 @@ func (mmNode *mClientMockNode) Expect(dc string, name string) *mClientMockNode {
 		mmNode.defaultExpectation = &ClientMockNodeExpectation{}
 	}
 
-	mmNode.defaultExpectation.params = &ClientMockNodeParams{dc, name}
+	mmNode.defaultExpectation.params = &ClientMockNodeParams{c1, s1, n1}
 	for _, e := range mmNode.expectations {
 		if minimock.Equal(e.params, mmNode.defaultExpectation.params) {
 			mmNode.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmNode.defaultExpectation.params)
@@ -1973,8 +3346,19 @@ func (mmNode *mClientMockNode) Expect(dc string, name string) *mClientMockNode {
 	return mmNode
 }
 
+// Inspect accepts an inspector function that has same arguments as the Client.Node
+func (mmNode *mClientMockNode) Inspect(f func(c1 Ctx, s1 string, n1 NodeQuery)) *mClientMockNode {
+	if mmNode.mock.inspectFuncNode != nil {
+		mmNode.mock.t.Fatalf("Inspect function is already set for ClientMock.Node")
+	}
+
+	mmNode.mock.inspectFuncNode = f
+
+	return mmNode
+}
+
 // Return sets up results that will be returned by Client.Node
-func (mmNode *mClientMockNode) Return(n1 NodeInfo, err error) *ClientMock {
+func (mmNode *mClientMockNode) Return(n2 NodeInfo, err error) *ClientMock {
 	if mmNode.mock.funcNode != nil {
 		mmNode.mock.t.Fatalf("ClientMock.Node mock is already set by Set")
 	}
@@ -1982,12 +3366,12 @@ func (mmNode *mClientMockNode) Return(n1 NodeInfo, err error) *ClientMock {
 	if mmNode.defaultExpectation == nil {
 		mmNode.defaultExpectation = &ClientMockNodeExpectation{mock: mmNode.mock}
 	}
-	mmNode.defaultExpectation.results = &ClientMockNodeResults{n1, err}
+	mmNode.defaultExpectation.results = &ClientMockNodeResults{n2, err}
 	return mmNode.mock
 }
 
 //Set uses given function f to mock the Client.Node method
-func (mmNode *mClientMockNode) Set(f func(dc string, name string) (n1 NodeInfo, err error)) *ClientMock {
+func (mmNode *mClientMockNode) Set(f func(c1 Ctx, s1 string, n1 NodeQuery) (n2 NodeInfo, err error)) *ClientMock {
 	if mmNode.defaultExpectation != nil {
 		mmNode.mock.t.Fatalf("Default expectation is already set for the Client.Node method")
 	}
@@ -2002,62 +3386,66 @@ func (mmNode *mClientMockNode) Set(f func(dc string, name string) (n1 NodeInfo, 
 
 // When sets expectation for the Client.Node which will trigger the result defined by the following
 // Then helper
-func (mmNode *mClientMockNode) When(dc string, name string) *ClientMockNodeExpectation {
+func (mmNode *mClientMockNode) When(c1 Ctx, s1 string, n1 NodeQuery) *ClientMockNodeExpectation {
 	if mmNode.mock.funcNode != nil {
 		mmNode.mock.t.Fatalf("ClientMock.Node mock is already set by Set")
 	}
 
 	expectation := &ClientMockNodeExpectation{
 		mock:   mmNode.mock,
-		params: &ClientMockNodeParams{dc, name},
+		params: &ClientMockNodeParams{c1, s1, n1},
 	}
 	mmNode.expectations = append(mmNode.expectations, expectation)
 	return expectation
 }
 
 // Then sets up Client.Node return parameters for the expectation previously defined by the When method
-func (e *ClientMockNodeExpectation) Then(n1 NodeInfo, err error) *ClientMock {
-	e.results = &ClientMockNodeResults{n1, err}
+func (e *ClientMockNodeExpectation) Then(n2 NodeInfo, err error) *ClientMock {
+	e.results = &ClientMockNodeResults{n2, err}
 	return e.mock
 }
 
 // Node implements Client
-func (mmNode *ClientMock) Node(dc string, name string) (n1 NodeInfo, err error) {
+func (mmNode *ClientMock) Node(c1 Ctx, s1 string, n1 NodeQuery) (n2 NodeInfo, err error) {
 	mm_atomic.AddUint64(&mmNode.beforeNodeCounter, 1)
 	defer mm_atomic.AddUint64(&mmNode.afterNodeCounter, 1)
 
-	params := &ClientMockNodeParams{dc, name}
+	if mmNode.inspectFuncNode != nil {
+		mmNode.inspectFuncNode(c1, s1, n1)
+	}
+
+	mm_params := &ClientMockNodeParams{c1, s1, n1}
 
 	// Record call args
 	mmNode.NodeMock.mutex.Lock()
-	mmNode.NodeMock.callArgs = append(mmNode.NodeMock.callArgs, params)
+	mmNode.NodeMock.callArgs = append(mmNode.NodeMock.callArgs, mm_params)
 	mmNode.NodeMock.mutex.Unlock()
 
 	for _, e := range mmNode.NodeMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.n1, e.results.err
+			return e.results.n2, e.results.err
 		}
 	}
 
 	if mmNode.NodeMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmNode.NodeMock.defaultExpectation.Counter, 1)
-		want := mmNode.NodeMock.defaultExpectation.params
-		got := ClientMockNodeParams{dc, name}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmNode.t.Errorf("ClientMock.Node got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmNode.NodeMock.defaultExpectation.params
+		mm_got := ClientMockNodeParams{c1, s1, n1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmNode.t.Errorf("ClientMock.Node got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmNode.NodeMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmNode.NodeMock.defaultExpectation.results
+		if mm_results == nil {
 			mmNode.t.Fatal("No results are set for the ClientMock.Node")
 		}
-		return (*results).n1, (*results).err
+		return (*mm_results).n2, (*mm_results).err
 	}
 	if mmNode.funcNode != nil {
-		return mmNode.funcNode(dc, name)
+		return mmNode.funcNode(c1, s1, n1)
 	}
-	mmNode.t.Fatalf("Unexpected call to ClientMock.Node. %v %v", dc, name)
+	mmNode.t.Fatalf("Unexpected call to ClientMock.Node. %v %v %v", c1, s1, n1)
 	return
 }
 
@@ -2145,7 +3533,8 @@ type ClientMockNodesExpectation struct {
 
 // ClientMockNodesParams contains parameters of the Client.Nodes
 type ClientMockNodesParams struct {
-	dc string
+	c1 Ctx
+	n1 NodesQuery
 }
 
 // ClientMockNodesResults contains results of the Client.Nodes
@@ -2155,7 +3544,7 @@ type ClientMockNodesResults struct {
 }
 
 // Expect sets up expected params for Client.Nodes
-func (mmNodes *mClientMockNodes) Expect(dc string) *mClientMockNodes {
+func (mmNodes *mClientMockNodes) Expect(c1 Ctx, n1 NodesQuery) *mClientMockNodes {
 	if mmNodes.mock.funcNodes != nil {
 		mmNodes.mock.t.Fatalf("ClientMock.Nodes mock is already set by Set")
 	}
@@ -2164,12 +3553,23 @@ func (mmNodes *mClientMockNodes) Expect(dc string) *mClientMockNodes {
 		mmNodes.defaultExpectation = &ClientMockNodesExpectation{}
 	}
 
-	mmNodes.defaultExpectation.params = &ClientMockNodesParams{dc}
+	mmNodes.defaultExpectation.params = &ClientMockNodesParams{c1, n1}
 	for _, e := range mmNodes.expectations {
 		if minimock.Equal(e.params, mmNodes.defaultExpectation.params) {
 			mmNodes.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmNodes.defaultExpectation.params)
 		}
 	}
+
+	return mmNodes
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Nodes
+func (mmNodes *mClientMockNodes) Inspect(f func(c1 Ctx, n1 NodesQuery)) *mClientMockNodes {
+	if mmNodes.mock.inspectFuncNodes != nil {
+		mmNodes.mock.t.Fatalf("Inspect function is already set for ClientMock.Nodes")
+	}
+
+	mmNodes.mock.inspectFuncNodes = f
 
 	return mmNodes
 }
@@ -2188,7 +3588,7 @@ func (mmNodes *mClientMockNodes) Return(na1 []Node, err error) *ClientMock {
 }
 
 //Set uses given function f to mock the Client.Nodes method
-func (mmNodes *mClientMockNodes) Set(f func(dc string) (na1 []Node, err error)) *ClientMock {
+func (mmNodes *mClientMockNodes) Set(f func(c1 Ctx, n1 NodesQuery) (na1 []Node, err error)) *ClientMock {
 	if mmNodes.defaultExpectation != nil {
 		mmNodes.mock.t.Fatalf("Default expectation is already set for the Client.Nodes method")
 	}
@@ -2203,14 +3603,14 @@ func (mmNodes *mClientMockNodes) Set(f func(dc string) (na1 []Node, err error)) 
 
 // When sets expectation for the Client.Nodes which will trigger the result defined by the following
 // Then helper
-func (mmNodes *mClientMockNodes) When(dc string) *ClientMockNodesExpectation {
+func (mmNodes *mClientMockNodes) When(c1 Ctx, n1 NodesQuery) *ClientMockNodesExpectation {
 	if mmNodes.mock.funcNodes != nil {
 		mmNodes.mock.t.Fatalf("ClientMock.Nodes mock is already set by Set")
 	}
 
 	expectation := &ClientMockNodesExpectation{
 		mock:   mmNodes.mock,
-		params: &ClientMockNodesParams{dc},
+		params: &ClientMockNodesParams{c1, n1},
 	}
 	mmNodes.expectations = append(mmNodes.expectations, expectation)
 	return expectation
@@ -2223,19 +3623,23 @@ func (e *ClientMockNodesExpectation) Then(na1 []Node, err error) *ClientMock {
 }
 
 // Nodes implements Client
-func (mmNodes *ClientMock) Nodes(dc string) (na1 []Node, err error) {
+func (mmNodes *ClientMock) Nodes(c1 Ctx, n1 NodesQuery) (na1 []Node, err error) {
 	mm_atomic.AddUint64(&mmNodes.beforeNodesCounter, 1)
 	defer mm_atomic.AddUint64(&mmNodes.afterNodesCounter, 1)
 
-	params := &ClientMockNodesParams{dc}
+	if mmNodes.inspectFuncNodes != nil {
+		mmNodes.inspectFuncNodes(c1, n1)
+	}
+
+	mm_params := &ClientMockNodesParams{c1, n1}
 
 	// Record call args
 	mmNodes.NodesMock.mutex.Lock()
-	mmNodes.NodesMock.callArgs = append(mmNodes.NodesMock.callArgs, params)
+	mmNodes.NodesMock.callArgs = append(mmNodes.NodesMock.callArgs, mm_params)
 	mmNodes.NodesMock.mutex.Unlock()
 
 	for _, e := range mmNodes.NodesMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.na1, e.results.err
 		}
@@ -2243,22 +3647,22 @@ func (mmNodes *ClientMock) Nodes(dc string) (na1 []Node, err error) {
 
 	if mmNodes.NodesMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmNodes.NodesMock.defaultExpectation.Counter, 1)
-		want := mmNodes.NodesMock.defaultExpectation.params
-		got := ClientMockNodesParams{dc}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmNodes.t.Errorf("ClientMock.Nodes got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmNodes.NodesMock.defaultExpectation.params
+		mm_got := ClientMockNodesParams{c1, n1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmNodes.t.Errorf("ClientMock.Nodes got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmNodes.NodesMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmNodes.NodesMock.defaultExpectation.results
+		if mm_results == nil {
 			mmNodes.t.Fatal("No results are set for the ClientMock.Nodes")
 		}
-		return (*results).na1, (*results).err
+		return (*mm_results).na1, (*mm_results).err
 	}
 	if mmNodes.funcNodes != nil {
-		return mmNodes.funcNodes(dc)
+		return mmNodes.funcNodes(c1, n1)
 	}
-	mmNodes.t.Fatalf("Unexpected call to ClientMock.Nodes. %v", dc)
+	mmNodes.t.Fatalf("Unexpected call to ClientMock.Nodes. %v %v", c1, n1)
 	return
 }
 
@@ -2346,6 +3750,7 @@ type ClientMockParticipateExpectation struct {
 
 // ClientMockParticipateParams contains parameters of the Client.Participate
 type ClientMockParticipateParams struct {
+	c1 Ctx
 	l1 LeadershipConfig
 	a1 AsLeaderFunc
 }
@@ -2357,7 +3762,7 @@ type ClientMockParticipateResults struct {
 }
 
 // Expect sets up expected params for Client.Participate
-func (mmParticipate *mClientMockParticipate) Expect(l1 LeadershipConfig, a1 AsLeaderFunc) *mClientMockParticipate {
+func (mmParticipate *mClientMockParticipate) Expect(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc) *mClientMockParticipate {
 	if mmParticipate.mock.funcParticipate != nil {
 		mmParticipate.mock.t.Fatalf("ClientMock.Participate mock is already set by Set")
 	}
@@ -2366,12 +3771,23 @@ func (mmParticipate *mClientMockParticipate) Expect(l1 LeadershipConfig, a1 AsLe
 		mmParticipate.defaultExpectation = &ClientMockParticipateExpectation{}
 	}
 
-	mmParticipate.defaultExpectation.params = &ClientMockParticipateParams{l1, a1}
+	mmParticipate.defaultExpectation.params = &ClientMockParticipateParams{c1, l1, a1}
 	for _, e := range mmParticipate.expectations {
 		if minimock.Equal(e.params, mmParticipate.defaultExpectation.params) {
 			mmParticipate.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmParticipate.defaultExpectation.params)
 		}
 	}
+
+	return mmParticipate
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Participate
+func (mmParticipate *mClientMockParticipate) Inspect(f func(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc)) *mClientMockParticipate {
+	if mmParticipate.mock.inspectFuncParticipate != nil {
+		mmParticipate.mock.t.Fatalf("Inspect function is already set for ClientMock.Participate")
+	}
+
+	mmParticipate.mock.inspectFuncParticipate = f
 
 	return mmParticipate
 }
@@ -2390,7 +3806,7 @@ func (mmParticipate *mClientMockParticipate) Return(l2 LeaderSession, err error)
 }
 
 //Set uses given function f to mock the Client.Participate method
-func (mmParticipate *mClientMockParticipate) Set(f func(l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error)) *ClientMock {
+func (mmParticipate *mClientMockParticipate) Set(f func(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error)) *ClientMock {
 	if mmParticipate.defaultExpectation != nil {
 		mmParticipate.mock.t.Fatalf("Default expectation is already set for the Client.Participate method")
 	}
@@ -2405,14 +3821,14 @@ func (mmParticipate *mClientMockParticipate) Set(f func(l1 LeadershipConfig, a1 
 
 // When sets expectation for the Client.Participate which will trigger the result defined by the following
 // Then helper
-func (mmParticipate *mClientMockParticipate) When(l1 LeadershipConfig, a1 AsLeaderFunc) *ClientMockParticipateExpectation {
+func (mmParticipate *mClientMockParticipate) When(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc) *ClientMockParticipateExpectation {
 	if mmParticipate.mock.funcParticipate != nil {
 		mmParticipate.mock.t.Fatalf("ClientMock.Participate mock is already set by Set")
 	}
 
 	expectation := &ClientMockParticipateExpectation{
 		mock:   mmParticipate.mock,
-		params: &ClientMockParticipateParams{l1, a1},
+		params: &ClientMockParticipateParams{c1, l1, a1},
 	}
 	mmParticipate.expectations = append(mmParticipate.expectations, expectation)
 	return expectation
@@ -2425,19 +3841,23 @@ func (e *ClientMockParticipateExpectation) Then(l2 LeaderSession, err error) *Cl
 }
 
 // Participate implements Client
-func (mmParticipate *ClientMock) Participate(l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error) {
+func (mmParticipate *ClientMock) Participate(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error) {
 	mm_atomic.AddUint64(&mmParticipate.beforeParticipateCounter, 1)
 	defer mm_atomic.AddUint64(&mmParticipate.afterParticipateCounter, 1)
 
-	params := &ClientMockParticipateParams{l1, a1}
+	if mmParticipate.inspectFuncParticipate != nil {
+		mmParticipate.inspectFuncParticipate(c1, l1, a1)
+	}
+
+	mm_params := &ClientMockParticipateParams{c1, l1, a1}
 
 	// Record call args
 	mmParticipate.ParticipateMock.mutex.Lock()
-	mmParticipate.ParticipateMock.callArgs = append(mmParticipate.ParticipateMock.callArgs, params)
+	mmParticipate.ParticipateMock.callArgs = append(mmParticipate.ParticipateMock.callArgs, mm_params)
 	mmParticipate.ParticipateMock.mutex.Unlock()
 
 	for _, e := range mmParticipate.ParticipateMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.l2, e.results.err
 		}
@@ -2445,22 +3865,22 @@ func (mmParticipate *ClientMock) Participate(l1 LeadershipConfig, a1 AsLeaderFun
 
 	if mmParticipate.ParticipateMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmParticipate.ParticipateMock.defaultExpectation.Counter, 1)
-		want := mmParticipate.ParticipateMock.defaultExpectation.params
-		got := ClientMockParticipateParams{l1, a1}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmParticipate.t.Errorf("ClientMock.Participate got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmParticipate.ParticipateMock.defaultExpectation.params
+		mm_got := ClientMockParticipateParams{c1, l1, a1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmParticipate.t.Errorf("ClientMock.Participate got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmParticipate.ParticipateMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmParticipate.ParticipateMock.defaultExpectation.results
+		if mm_results == nil {
 			mmParticipate.t.Fatal("No results are set for the ClientMock.Participate")
 		}
-		return (*results).l2, (*results).err
+		return (*mm_results).l2, (*mm_results).err
 	}
 	if mmParticipate.funcParticipate != nil {
-		return mmParticipate.funcParticipate(l1, a1)
+		return mmParticipate.funcParticipate(c1, l1, a1)
 	}
-	mmParticipate.t.Fatalf("Unexpected call to ClientMock.Participate. %v %v", l1, a1)
+	mmParticipate.t.Fatalf("Unexpected call to ClientMock.Participate. %v %v %v", c1, l1, a1)
 	return
 }
 
@@ -2548,9 +3968,10 @@ type ClientMockPutExpectation struct {
 
 // ClientMockPutParams contains parameters of the Client.Put
 type ClientMockPutParams struct {
-	dc    string
-	path  string
-	value string
+	c1 Ctx
+	s1 string
+	s2 string
+	q1 Query
 }
 
 // ClientMockPutResults contains results of the Client.Put
@@ -2559,7 +3980,7 @@ type ClientMockPutResults struct {
 }
 
 // Expect sets up expected params for Client.Put
-func (mmPut *mClientMockPut) Expect(dc string, path string, value string) *mClientMockPut {
+func (mmPut *mClientMockPut) Expect(c1 Ctx, s1 string, s2 string, q1 Query) *mClientMockPut {
 	if mmPut.mock.funcPut != nil {
 		mmPut.mock.t.Fatalf("ClientMock.Put mock is already set by Set")
 	}
@@ -2568,12 +3989,23 @@ func (mmPut *mClientMockPut) Expect(dc string, path string, value string) *mClie
 		mmPut.defaultExpectation = &ClientMockPutExpectation{}
 	}
 
-	mmPut.defaultExpectation.params = &ClientMockPutParams{dc, path, value}
+	mmPut.defaultExpectation.params = &ClientMockPutParams{c1, s1, s2, q1}
 	for _, e := range mmPut.expectations {
 		if minimock.Equal(e.params, mmPut.defaultExpectation.params) {
 			mmPut.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmPut.defaultExpectation.params)
 		}
 	}
+
+	return mmPut
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Put
+func (mmPut *mClientMockPut) Inspect(f func(c1 Ctx, s1 string, s2 string, q1 Query)) *mClientMockPut {
+	if mmPut.mock.inspectFuncPut != nil {
+		mmPut.mock.t.Fatalf("Inspect function is already set for ClientMock.Put")
+	}
+
+	mmPut.mock.inspectFuncPut = f
 
 	return mmPut
 }
@@ -2592,7 +4024,7 @@ func (mmPut *mClientMockPut) Return(err error) *ClientMock {
 }
 
 //Set uses given function f to mock the Client.Put method
-func (mmPut *mClientMockPut) Set(f func(dc string, path string, value string) (err error)) *ClientMock {
+func (mmPut *mClientMockPut) Set(f func(c1 Ctx, s1 string, s2 string, q1 Query) (err error)) *ClientMock {
 	if mmPut.defaultExpectation != nil {
 		mmPut.mock.t.Fatalf("Default expectation is already set for the Client.Put method")
 	}
@@ -2607,14 +4039,14 @@ func (mmPut *mClientMockPut) Set(f func(dc string, path string, value string) (e
 
 // When sets expectation for the Client.Put which will trigger the result defined by the following
 // Then helper
-func (mmPut *mClientMockPut) When(dc string, path string, value string) *ClientMockPutExpectation {
+func (mmPut *mClientMockPut) When(c1 Ctx, s1 string, s2 string, q1 Query) *ClientMockPutExpectation {
 	if mmPut.mock.funcPut != nil {
 		mmPut.mock.t.Fatalf("ClientMock.Put mock is already set by Set")
 	}
 
 	expectation := &ClientMockPutExpectation{
 		mock:   mmPut.mock,
-		params: &ClientMockPutParams{dc, path, value},
+		params: &ClientMockPutParams{c1, s1, s2, q1},
 	}
 	mmPut.expectations = append(mmPut.expectations, expectation)
 	return expectation
@@ -2627,19 +4059,23 @@ func (e *ClientMockPutExpectation) Then(err error) *ClientMock {
 }
 
 // Put implements Client
-func (mmPut *ClientMock) Put(dc string, path string, value string) (err error) {
+func (mmPut *ClientMock) Put(c1 Ctx, s1 string, s2 string, q1 Query) (err error) {
 	mm_atomic.AddUint64(&mmPut.beforePutCounter, 1)
 	defer mm_atomic.AddUint64(&mmPut.afterPutCounter, 1)
 
-	params := &ClientMockPutParams{dc, path, value}
+	if mmPut.inspectFuncPut != nil {
+		mmPut.inspectFuncPut(c1, s1, s2, q1)
+	}
+
+	mm_params := &ClientMockPutParams{c1, s1, s2, q1}
 
 	// Record call args
 	mmPut.PutMock.mutex.Lock()
-	mmPut.PutMock.callArgs = append(mmPut.PutMock.callArgs, params)
+	mmPut.PutMock.callArgs = append(mmPut.PutMock.callArgs, mm_params)
 	mmPut.PutMock.mutex.Unlock()
 
 	for _, e := range mmPut.PutMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.err
 		}
@@ -2647,22 +4083,22 @@ func (mmPut *ClientMock) Put(dc string, path string, value string) (err error) {
 
 	if mmPut.PutMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmPut.PutMock.defaultExpectation.Counter, 1)
-		want := mmPut.PutMock.defaultExpectation.params
-		got := ClientMockPutParams{dc, path, value}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmPut.t.Errorf("ClientMock.Put got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmPut.PutMock.defaultExpectation.params
+		mm_got := ClientMockPutParams{c1, s1, s2, q1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmPut.t.Errorf("ClientMock.Put got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmPut.PutMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmPut.PutMock.defaultExpectation.results
+		if mm_results == nil {
 			mmPut.t.Fatal("No results are set for the ClientMock.Put")
 		}
-		return (*results).err
+		return (*mm_results).err
 	}
 	if mmPut.funcPut != nil {
-		return mmPut.funcPut(dc, path, value)
+		return mmPut.funcPut(c1, s1, s2, q1)
 	}
-	mmPut.t.Fatalf("Unexpected call to ClientMock.Put. %v %v %v", dc, path, value)
+	mmPut.t.Fatalf("Unexpected call to ClientMock.Put. %v %v %v %v", c1, s1, s2, q1)
 	return
 }
 
@@ -2750,18 +4186,18 @@ type ClientMockReadSessionExpectation struct {
 
 // ClientMockReadSessionParams contains parameters of the Client.ReadSession
 type ClientMockReadSessionParams struct {
-	dc string
-	id SessionID
+	c1 Ctx
+	s1 SessionQuery
 }
 
 // ClientMockReadSessionResults contains results of the Client.ReadSession
 type ClientMockReadSessionResults struct {
-	s1  SessionConfig
+	s2  SessionConfig
 	err error
 }
 
 // Expect sets up expected params for Client.ReadSession
-func (mmReadSession *mClientMockReadSession) Expect(dc string, id SessionID) *mClientMockReadSession {
+func (mmReadSession *mClientMockReadSession) Expect(c1 Ctx, s1 SessionQuery) *mClientMockReadSession {
 	if mmReadSession.mock.funcReadSession != nil {
 		mmReadSession.mock.t.Fatalf("ClientMock.ReadSession mock is already set by Set")
 	}
@@ -2770,7 +4206,7 @@ func (mmReadSession *mClientMockReadSession) Expect(dc string, id SessionID) *mC
 		mmReadSession.defaultExpectation = &ClientMockReadSessionExpectation{}
 	}
 
-	mmReadSession.defaultExpectation.params = &ClientMockReadSessionParams{dc, id}
+	mmReadSession.defaultExpectation.params = &ClientMockReadSessionParams{c1, s1}
 	for _, e := range mmReadSession.expectations {
 		if minimock.Equal(e.params, mmReadSession.defaultExpectation.params) {
 			mmReadSession.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmReadSession.defaultExpectation.params)
@@ -2780,8 +4216,19 @@ func (mmReadSession *mClientMockReadSession) Expect(dc string, id SessionID) *mC
 	return mmReadSession
 }
 
+// Inspect accepts an inspector function that has same arguments as the Client.ReadSession
+func (mmReadSession *mClientMockReadSession) Inspect(f func(c1 Ctx, s1 SessionQuery)) *mClientMockReadSession {
+	if mmReadSession.mock.inspectFuncReadSession != nil {
+		mmReadSession.mock.t.Fatalf("Inspect function is already set for ClientMock.ReadSession")
+	}
+
+	mmReadSession.mock.inspectFuncReadSession = f
+
+	return mmReadSession
+}
+
 // Return sets up results that will be returned by Client.ReadSession
-func (mmReadSession *mClientMockReadSession) Return(s1 SessionConfig, err error) *ClientMock {
+func (mmReadSession *mClientMockReadSession) Return(s2 SessionConfig, err error) *ClientMock {
 	if mmReadSession.mock.funcReadSession != nil {
 		mmReadSession.mock.t.Fatalf("ClientMock.ReadSession mock is already set by Set")
 	}
@@ -2789,12 +4236,12 @@ func (mmReadSession *mClientMockReadSession) Return(s1 SessionConfig, err error)
 	if mmReadSession.defaultExpectation == nil {
 		mmReadSession.defaultExpectation = &ClientMockReadSessionExpectation{mock: mmReadSession.mock}
 	}
-	mmReadSession.defaultExpectation.results = &ClientMockReadSessionResults{s1, err}
+	mmReadSession.defaultExpectation.results = &ClientMockReadSessionResults{s2, err}
 	return mmReadSession.mock
 }
 
 //Set uses given function f to mock the Client.ReadSession method
-func (mmReadSession *mClientMockReadSession) Set(f func(dc string, id SessionID) (s1 SessionConfig, err error)) *ClientMock {
+func (mmReadSession *mClientMockReadSession) Set(f func(c1 Ctx, s1 SessionQuery) (s2 SessionConfig, err error)) *ClientMock {
 	if mmReadSession.defaultExpectation != nil {
 		mmReadSession.mock.t.Fatalf("Default expectation is already set for the Client.ReadSession method")
 	}
@@ -2809,62 +4256,66 @@ func (mmReadSession *mClientMockReadSession) Set(f func(dc string, id SessionID)
 
 // When sets expectation for the Client.ReadSession which will trigger the result defined by the following
 // Then helper
-func (mmReadSession *mClientMockReadSession) When(dc string, id SessionID) *ClientMockReadSessionExpectation {
+func (mmReadSession *mClientMockReadSession) When(c1 Ctx, s1 SessionQuery) *ClientMockReadSessionExpectation {
 	if mmReadSession.mock.funcReadSession != nil {
 		mmReadSession.mock.t.Fatalf("ClientMock.ReadSession mock is already set by Set")
 	}
 
 	expectation := &ClientMockReadSessionExpectation{
 		mock:   mmReadSession.mock,
-		params: &ClientMockReadSessionParams{dc, id},
+		params: &ClientMockReadSessionParams{c1, s1},
 	}
 	mmReadSession.expectations = append(mmReadSession.expectations, expectation)
 	return expectation
 }
 
 // Then sets up Client.ReadSession return parameters for the expectation previously defined by the When method
-func (e *ClientMockReadSessionExpectation) Then(s1 SessionConfig, err error) *ClientMock {
-	e.results = &ClientMockReadSessionResults{s1, err}
+func (e *ClientMockReadSessionExpectation) Then(s2 SessionConfig, err error) *ClientMock {
+	e.results = &ClientMockReadSessionResults{s2, err}
 	return e.mock
 }
 
 // ReadSession implements Client
-func (mmReadSession *ClientMock) ReadSession(dc string, id SessionID) (s1 SessionConfig, err error) {
+func (mmReadSession *ClientMock) ReadSession(c1 Ctx, s1 SessionQuery) (s2 SessionConfig, err error) {
 	mm_atomic.AddUint64(&mmReadSession.beforeReadSessionCounter, 1)
 	defer mm_atomic.AddUint64(&mmReadSession.afterReadSessionCounter, 1)
 
-	params := &ClientMockReadSessionParams{dc, id}
+	if mmReadSession.inspectFuncReadSession != nil {
+		mmReadSession.inspectFuncReadSession(c1, s1)
+	}
+
+	mm_params := &ClientMockReadSessionParams{c1, s1}
 
 	// Record call args
 	mmReadSession.ReadSessionMock.mutex.Lock()
-	mmReadSession.ReadSessionMock.callArgs = append(mmReadSession.ReadSessionMock.callArgs, params)
+	mmReadSession.ReadSessionMock.callArgs = append(mmReadSession.ReadSessionMock.callArgs, mm_params)
 	mmReadSession.ReadSessionMock.mutex.Unlock()
 
 	for _, e := range mmReadSession.ReadSessionMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.s1, e.results.err
+			return e.results.s2, e.results.err
 		}
 	}
 
 	if mmReadSession.ReadSessionMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmReadSession.ReadSessionMock.defaultExpectation.Counter, 1)
-		want := mmReadSession.ReadSessionMock.defaultExpectation.params
-		got := ClientMockReadSessionParams{dc, id}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmReadSession.t.Errorf("ClientMock.ReadSession got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmReadSession.ReadSessionMock.defaultExpectation.params
+		mm_got := ClientMockReadSessionParams{c1, s1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmReadSession.t.Errorf("ClientMock.ReadSession got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmReadSession.ReadSessionMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmReadSession.ReadSessionMock.defaultExpectation.results
+		if mm_results == nil {
 			mmReadSession.t.Fatal("No results are set for the ClientMock.ReadSession")
 		}
-		return (*results).s1, (*results).err
+		return (*mm_results).s2, (*mm_results).err
 	}
 	if mmReadSession.funcReadSession != nil {
-		return mmReadSession.funcReadSession(dc, id)
+		return mmReadSession.funcReadSession(c1, s1)
 	}
-	mmReadSession.t.Fatalf("Unexpected call to ClientMock.ReadSession. %v %v", dc, id)
+	mmReadSession.t.Fatalf("Unexpected call to ClientMock.ReadSession. %v %v", c1, s1)
 	return
 }
 
@@ -2952,18 +4403,19 @@ type ClientMockRecurseExpectation struct {
 
 // ClientMockRecurseParams contains parameters of the Client.Recurse
 type ClientMockRecurseParams struct {
-	dc   string
-	path string
+	c1 Ctx
+	s1 string
+	q1 Query
 }
 
 // ClientMockRecurseResults contains results of the Client.Recurse
 type ClientMockRecurseResults struct {
-	saa1 [][2]string
-	err  error
+	pa1 []Pair
+	err error
 }
 
 // Expect sets up expected params for Client.Recurse
-func (mmRecurse *mClientMockRecurse) Expect(dc string, path string) *mClientMockRecurse {
+func (mmRecurse *mClientMockRecurse) Expect(c1 Ctx, s1 string, q1 Query) *mClientMockRecurse {
 	if mmRecurse.mock.funcRecurse != nil {
 		mmRecurse.mock.t.Fatalf("ClientMock.Recurse mock is already set by Set")
 	}
@@ -2972,7 +4424,7 @@ func (mmRecurse *mClientMockRecurse) Expect(dc string, path string) *mClientMock
 		mmRecurse.defaultExpectation = &ClientMockRecurseExpectation{}
 	}
 
-	mmRecurse.defaultExpectation.params = &ClientMockRecurseParams{dc, path}
+	mmRecurse.defaultExpectation.params = &ClientMockRecurseParams{c1, s1, q1}
 	for _, e := range mmRecurse.expectations {
 		if minimock.Equal(e.params, mmRecurse.defaultExpectation.params) {
 			mmRecurse.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmRecurse.defaultExpectation.params)
@@ -2982,8 +4434,19 @@ func (mmRecurse *mClientMockRecurse) Expect(dc string, path string) *mClientMock
 	return mmRecurse
 }
 
+// Inspect accepts an inspector function that has same arguments as the Client.Recurse
+func (mmRecurse *mClientMockRecurse) Inspect(f func(c1 Ctx, s1 string, q1 Query)) *mClientMockRecurse {
+	if mmRecurse.mock.inspectFuncRecurse != nil {
+		mmRecurse.mock.t.Fatalf("Inspect function is already set for ClientMock.Recurse")
+	}
+
+	mmRecurse.mock.inspectFuncRecurse = f
+
+	return mmRecurse
+}
+
 // Return sets up results that will be returned by Client.Recurse
-func (mmRecurse *mClientMockRecurse) Return(saa1 [][2]string, err error) *ClientMock {
+func (mmRecurse *mClientMockRecurse) Return(pa1 []Pair, err error) *ClientMock {
 	if mmRecurse.mock.funcRecurse != nil {
 		mmRecurse.mock.t.Fatalf("ClientMock.Recurse mock is already set by Set")
 	}
@@ -2991,12 +4454,12 @@ func (mmRecurse *mClientMockRecurse) Return(saa1 [][2]string, err error) *Client
 	if mmRecurse.defaultExpectation == nil {
 		mmRecurse.defaultExpectation = &ClientMockRecurseExpectation{mock: mmRecurse.mock}
 	}
-	mmRecurse.defaultExpectation.results = &ClientMockRecurseResults{saa1, err}
+	mmRecurse.defaultExpectation.results = &ClientMockRecurseResults{pa1, err}
 	return mmRecurse.mock
 }
 
 //Set uses given function f to mock the Client.Recurse method
-func (mmRecurse *mClientMockRecurse) Set(f func(dc string, path string) (saa1 [][2]string, err error)) *ClientMock {
+func (mmRecurse *mClientMockRecurse) Set(f func(c1 Ctx, s1 string, q1 Query) (pa1 []Pair, err error)) *ClientMock {
 	if mmRecurse.defaultExpectation != nil {
 		mmRecurse.mock.t.Fatalf("Default expectation is already set for the Client.Recurse method")
 	}
@@ -3011,62 +4474,66 @@ func (mmRecurse *mClientMockRecurse) Set(f func(dc string, path string) (saa1 []
 
 // When sets expectation for the Client.Recurse which will trigger the result defined by the following
 // Then helper
-func (mmRecurse *mClientMockRecurse) When(dc string, path string) *ClientMockRecurseExpectation {
+func (mmRecurse *mClientMockRecurse) When(c1 Ctx, s1 string, q1 Query) *ClientMockRecurseExpectation {
 	if mmRecurse.mock.funcRecurse != nil {
 		mmRecurse.mock.t.Fatalf("ClientMock.Recurse mock is already set by Set")
 	}
 
 	expectation := &ClientMockRecurseExpectation{
 		mock:   mmRecurse.mock,
-		params: &ClientMockRecurseParams{dc, path},
+		params: &ClientMockRecurseParams{c1, s1, q1},
 	}
 	mmRecurse.expectations = append(mmRecurse.expectations, expectation)
 	return expectation
 }
 
 // Then sets up Client.Recurse return parameters for the expectation previously defined by the When method
-func (e *ClientMockRecurseExpectation) Then(saa1 [][2]string, err error) *ClientMock {
-	e.results = &ClientMockRecurseResults{saa1, err}
+func (e *ClientMockRecurseExpectation) Then(pa1 []Pair, err error) *ClientMock {
+	e.results = &ClientMockRecurseResults{pa1, err}
 	return e.mock
 }
 
 // Recurse implements Client
-func (mmRecurse *ClientMock) Recurse(dc string, path string) (saa1 [][2]string, err error) {
+func (mmRecurse *ClientMock) Recurse(c1 Ctx, s1 string, q1 Query) (pa1 []Pair, err error) {
 	mm_atomic.AddUint64(&mmRecurse.beforeRecurseCounter, 1)
 	defer mm_atomic.AddUint64(&mmRecurse.afterRecurseCounter, 1)
 
-	params := &ClientMockRecurseParams{dc, path}
+	if mmRecurse.inspectFuncRecurse != nil {
+		mmRecurse.inspectFuncRecurse(c1, s1, q1)
+	}
+
+	mm_params := &ClientMockRecurseParams{c1, s1, q1}
 
 	// Record call args
 	mmRecurse.RecurseMock.mutex.Lock()
-	mmRecurse.RecurseMock.callArgs = append(mmRecurse.RecurseMock.callArgs, params)
+	mmRecurse.RecurseMock.callArgs = append(mmRecurse.RecurseMock.callArgs, mm_params)
 	mmRecurse.RecurseMock.mutex.Unlock()
 
 	for _, e := range mmRecurse.RecurseMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.saa1, e.results.err
+			return e.results.pa1, e.results.err
 		}
 	}
 
 	if mmRecurse.RecurseMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmRecurse.RecurseMock.defaultExpectation.Counter, 1)
-		want := mmRecurse.RecurseMock.defaultExpectation.params
-		got := ClientMockRecurseParams{dc, path}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmRecurse.t.Errorf("ClientMock.Recurse got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmRecurse.RecurseMock.defaultExpectation.params
+		mm_got := ClientMockRecurseParams{c1, s1, q1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmRecurse.t.Errorf("ClientMock.Recurse got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmRecurse.RecurseMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmRecurse.RecurseMock.defaultExpectation.results
+		if mm_results == nil {
 			mmRecurse.t.Fatal("No results are set for the ClientMock.Recurse")
 		}
-		return (*results).saa1, (*results).err
+		return (*mm_results).pa1, (*mm_results).err
 	}
 	if mmRecurse.funcRecurse != nil {
-		return mmRecurse.funcRecurse(dc, path)
+		return mmRecurse.funcRecurse(c1, s1, q1)
 	}
-	mmRecurse.t.Fatalf("Unexpected call to ClientMock.Recurse. %v %v", dc, path)
+	mmRecurse.t.Fatalf("Unexpected call to ClientMock.Recurse. %v %v %v", c1, s1, q1)
 	return
 }
 
@@ -3139,14 +4606,22 @@ type mClientMockReload struct {
 	mock               *ClientMock
 	defaultExpectation *ClientMockReloadExpectation
 	expectations       []*ClientMockReloadExpectation
+
+	callArgs []*ClientMockReloadParams
+	mutex    sync.RWMutex
 }
 
 // ClientMockReloadExpectation specifies expectation struct of the Client.Reload
 type ClientMockReloadExpectation struct {
-	mock *ClientMock
-
+	mock    *ClientMock
+	params  *ClientMockReloadParams
 	results *ClientMockReloadResults
 	Counter uint64
+}
+
+// ClientMockReloadParams contains parameters of the Client.Reload
+type ClientMockReloadParams struct {
+	ctx Ctx
 }
 
 // ClientMockReloadResults contains results of the Client.Reload
@@ -3155,7 +4630,7 @@ type ClientMockReloadResults struct {
 }
 
 // Expect sets up expected params for Client.Reload
-func (mmReload *mClientMockReload) Expect() *mClientMockReload {
+func (mmReload *mClientMockReload) Expect(ctx Ctx) *mClientMockReload {
 	if mmReload.mock.funcReload != nil {
 		mmReload.mock.t.Fatalf("ClientMock.Reload mock is already set by Set")
 	}
@@ -3163,6 +4638,24 @@ func (mmReload *mClientMockReload) Expect() *mClientMockReload {
 	if mmReload.defaultExpectation == nil {
 		mmReload.defaultExpectation = &ClientMockReloadExpectation{}
 	}
+
+	mmReload.defaultExpectation.params = &ClientMockReloadParams{ctx}
+	for _, e := range mmReload.expectations {
+		if minimock.Equal(e.params, mmReload.defaultExpectation.params) {
+			mmReload.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmReload.defaultExpectation.params)
+		}
+	}
+
+	return mmReload
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Reload
+func (mmReload *mClientMockReload) Inspect(f func(ctx Ctx)) *mClientMockReload {
+	if mmReload.mock.inspectFuncReload != nil {
+		mmReload.mock.t.Fatalf("Inspect function is already set for ClientMock.Reload")
+	}
+
+	mmReload.mock.inspectFuncReload = f
 
 	return mmReload
 }
@@ -3181,7 +4674,7 @@ func (mmReload *mClientMockReload) Return(err error) *ClientMock {
 }
 
 //Set uses given function f to mock the Client.Reload method
-func (mmReload *mClientMockReload) Set(f func() (err error)) *ClientMock {
+func (mmReload *mClientMockReload) Set(f func(ctx Ctx) (err error)) *ClientMock {
 	if mmReload.defaultExpectation != nil {
 		mmReload.mock.t.Fatalf("Default expectation is already set for the Client.Reload method")
 	}
@@ -3194,24 +4687,68 @@ func (mmReload *mClientMockReload) Set(f func() (err error)) *ClientMock {
 	return mmReload.mock
 }
 
+// When sets expectation for the Client.Reload which will trigger the result defined by the following
+// Then helper
+func (mmReload *mClientMockReload) When(ctx Ctx) *ClientMockReloadExpectation {
+	if mmReload.mock.funcReload != nil {
+		mmReload.mock.t.Fatalf("ClientMock.Reload mock is already set by Set")
+	}
+
+	expectation := &ClientMockReloadExpectation{
+		mock:   mmReload.mock,
+		params: &ClientMockReloadParams{ctx},
+	}
+	mmReload.expectations = append(mmReload.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Client.Reload return parameters for the expectation previously defined by the When method
+func (e *ClientMockReloadExpectation) Then(err error) *ClientMock {
+	e.results = &ClientMockReloadResults{err}
+	return e.mock
+}
+
 // Reload implements Client
-func (mmReload *ClientMock) Reload() (err error) {
+func (mmReload *ClientMock) Reload(ctx Ctx) (err error) {
 	mm_atomic.AddUint64(&mmReload.beforeReloadCounter, 1)
 	defer mm_atomic.AddUint64(&mmReload.afterReloadCounter, 1)
 
+	if mmReload.inspectFuncReload != nil {
+		mmReload.inspectFuncReload(ctx)
+	}
+
+	mm_params := &ClientMockReloadParams{ctx}
+
+	// Record call args
+	mmReload.ReloadMock.mutex.Lock()
+	mmReload.ReloadMock.callArgs = append(mmReload.ReloadMock.callArgs, mm_params)
+	mmReload.ReloadMock.mutex.Unlock()
+
+	for _, e := range mmReload.ReloadMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
 	if mmReload.ReloadMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmReload.ReloadMock.defaultExpectation.Counter, 1)
+		mm_want := mmReload.ReloadMock.defaultExpectation.params
+		mm_got := ClientMockReloadParams{ctx}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmReload.t.Errorf("ClientMock.Reload got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
 
-		results := mmReload.ReloadMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmReload.ReloadMock.defaultExpectation.results
+		if mm_results == nil {
 			mmReload.t.Fatal("No results are set for the ClientMock.Reload")
 		}
-		return (*results).err
+		return (*mm_results).err
 	}
 	if mmReload.funcReload != nil {
-		return mmReload.funcReload()
+		return mmReload.funcReload(ctx)
 	}
-	mmReload.t.Fatalf("Unexpected call to ClientMock.Reload.")
+	mmReload.t.Fatalf("Unexpected call to ClientMock.Reload. %v", ctx)
 	return
 }
 
@@ -3223,6 +4760,19 @@ func (mmReload *ClientMock) ReloadAfterCounter() uint64 {
 // ReloadBeforeCounter returns a count of ClientMock.Reload invocations
 func (mmReload *ClientMock) ReloadBeforeCounter() uint64 {
 	return mm_atomic.LoadUint64(&mmReload.beforeReloadCounter)
+}
+
+// Calls returns a list of arguments used in each call to ClientMock.Reload.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmReload *mClientMockReload) Calls() []*ClientMockReloadParams {
+	mmReload.mutex.RLock()
+
+	argCopy := make([]*ClientMockReloadParams, len(mmReload.callArgs))
+	copy(argCopy, mmReload.callArgs)
+
+	mmReload.mutex.RUnlock()
+
+	return argCopy
 }
 
 // MinimockReloadDone returns true if the count of the Reload invocations corresponds
@@ -3249,13 +4799,17 @@ func (m *ClientMock) MinimockReloadDone() bool {
 func (m *ClientMock) MinimockReloadInspect() {
 	for _, e := range m.ReloadMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Error("Expected call to ClientMock.Reload")
+			m.t.Errorf("Expected call to ClientMock.Reload with params: %#v", *e.params)
 		}
 	}
 
 	// if default expectation was set then invocations count should be greater than zero
 	if m.ReloadMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterReloadCounter) < 1 {
-		m.t.Error("Expected call to ClientMock.Reload")
+		if m.ReloadMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ClientMock.Reload")
+		} else {
+			m.t.Errorf("Expected call to ClientMock.Reload with params: %#v", *m.ReloadMock.defaultExpectation.params)
+		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcReload != nil && mm_atomic.LoadUint64(&m.afterReloadCounter) < 1 {
@@ -3282,8 +4836,8 @@ type ClientMockRenewSessionExpectation struct {
 
 // ClientMockRenewSessionParams contains parameters of the Client.RenewSession
 type ClientMockRenewSessionParams struct {
-	dc string
-	id SessionID
+	c1 Ctx
+	s1 SessionQuery
 }
 
 // ClientMockRenewSessionResults contains results of the Client.RenewSession
@@ -3293,7 +4847,7 @@ type ClientMockRenewSessionResults struct {
 }
 
 // Expect sets up expected params for Client.RenewSession
-func (mmRenewSession *mClientMockRenewSession) Expect(dc string, id SessionID) *mClientMockRenewSession {
+func (mmRenewSession *mClientMockRenewSession) Expect(c1 Ctx, s1 SessionQuery) *mClientMockRenewSession {
 	if mmRenewSession.mock.funcRenewSession != nil {
 		mmRenewSession.mock.t.Fatalf("ClientMock.RenewSession mock is already set by Set")
 	}
@@ -3302,12 +4856,23 @@ func (mmRenewSession *mClientMockRenewSession) Expect(dc string, id SessionID) *
 		mmRenewSession.defaultExpectation = &ClientMockRenewSessionExpectation{}
 	}
 
-	mmRenewSession.defaultExpectation.params = &ClientMockRenewSessionParams{dc, id}
+	mmRenewSession.defaultExpectation.params = &ClientMockRenewSessionParams{c1, s1}
 	for _, e := range mmRenewSession.expectations {
 		if minimock.Equal(e.params, mmRenewSession.defaultExpectation.params) {
 			mmRenewSession.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmRenewSession.defaultExpectation.params)
 		}
 	}
+
+	return mmRenewSession
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.RenewSession
+func (mmRenewSession *mClientMockRenewSession) Inspect(f func(c1 Ctx, s1 SessionQuery)) *mClientMockRenewSession {
+	if mmRenewSession.mock.inspectFuncRenewSession != nil {
+		mmRenewSession.mock.t.Fatalf("Inspect function is already set for ClientMock.RenewSession")
+	}
+
+	mmRenewSession.mock.inspectFuncRenewSession = f
 
 	return mmRenewSession
 }
@@ -3326,7 +4891,7 @@ func (mmRenewSession *mClientMockRenewSession) Return(d1 time.Duration, err erro
 }
 
 //Set uses given function f to mock the Client.RenewSession method
-func (mmRenewSession *mClientMockRenewSession) Set(f func(dc string, id SessionID) (d1 time.Duration, err error)) *ClientMock {
+func (mmRenewSession *mClientMockRenewSession) Set(f func(c1 Ctx, s1 SessionQuery) (d1 time.Duration, err error)) *ClientMock {
 	if mmRenewSession.defaultExpectation != nil {
 		mmRenewSession.mock.t.Fatalf("Default expectation is already set for the Client.RenewSession method")
 	}
@@ -3341,14 +4906,14 @@ func (mmRenewSession *mClientMockRenewSession) Set(f func(dc string, id SessionI
 
 // When sets expectation for the Client.RenewSession which will trigger the result defined by the following
 // Then helper
-func (mmRenewSession *mClientMockRenewSession) When(dc string, id SessionID) *ClientMockRenewSessionExpectation {
+func (mmRenewSession *mClientMockRenewSession) When(c1 Ctx, s1 SessionQuery) *ClientMockRenewSessionExpectation {
 	if mmRenewSession.mock.funcRenewSession != nil {
 		mmRenewSession.mock.t.Fatalf("ClientMock.RenewSession mock is already set by Set")
 	}
 
 	expectation := &ClientMockRenewSessionExpectation{
 		mock:   mmRenewSession.mock,
-		params: &ClientMockRenewSessionParams{dc, id},
+		params: &ClientMockRenewSessionParams{c1, s1},
 	}
 	mmRenewSession.expectations = append(mmRenewSession.expectations, expectation)
 	return expectation
@@ -3361,19 +4926,23 @@ func (e *ClientMockRenewSessionExpectation) Then(d1 time.Duration, err error) *C
 }
 
 // RenewSession implements Client
-func (mmRenewSession *ClientMock) RenewSession(dc string, id SessionID) (d1 time.Duration, err error) {
+func (mmRenewSession *ClientMock) RenewSession(c1 Ctx, s1 SessionQuery) (d1 time.Duration, err error) {
 	mm_atomic.AddUint64(&mmRenewSession.beforeRenewSessionCounter, 1)
 	defer mm_atomic.AddUint64(&mmRenewSession.afterRenewSessionCounter, 1)
 
-	params := &ClientMockRenewSessionParams{dc, id}
+	if mmRenewSession.inspectFuncRenewSession != nil {
+		mmRenewSession.inspectFuncRenewSession(c1, s1)
+	}
+
+	mm_params := &ClientMockRenewSessionParams{c1, s1}
 
 	// Record call args
 	mmRenewSession.RenewSessionMock.mutex.Lock()
-	mmRenewSession.RenewSessionMock.callArgs = append(mmRenewSession.RenewSessionMock.callArgs, params)
+	mmRenewSession.RenewSessionMock.callArgs = append(mmRenewSession.RenewSessionMock.callArgs, mm_params)
 	mmRenewSession.RenewSessionMock.mutex.Unlock()
 
 	for _, e := range mmRenewSession.RenewSessionMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.d1, e.results.err
 		}
@@ -3381,22 +4950,22 @@ func (mmRenewSession *ClientMock) RenewSession(dc string, id SessionID) (d1 time
 
 	if mmRenewSession.RenewSessionMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmRenewSession.RenewSessionMock.defaultExpectation.Counter, 1)
-		want := mmRenewSession.RenewSessionMock.defaultExpectation.params
-		got := ClientMockRenewSessionParams{dc, id}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmRenewSession.t.Errorf("ClientMock.RenewSession got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmRenewSession.RenewSessionMock.defaultExpectation.params
+		mm_got := ClientMockRenewSessionParams{c1, s1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmRenewSession.t.Errorf("ClientMock.RenewSession got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmRenewSession.RenewSessionMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmRenewSession.RenewSessionMock.defaultExpectation.results
+		if mm_results == nil {
 			mmRenewSession.t.Fatal("No results are set for the ClientMock.RenewSession")
 		}
-		return (*results).d1, (*results).err
+		return (*mm_results).d1, (*mm_results).err
 	}
 	if mmRenewSession.funcRenewSession != nil {
-		return mmRenewSession.funcRenewSession(dc, id)
+		return mmRenewSession.funcRenewSession(c1, s1)
 	}
-	mmRenewSession.t.Fatalf("Unexpected call to ClientMock.RenewSession. %v %v", dc, id)
+	mmRenewSession.t.Fatalf("Unexpected call to ClientMock.RenewSession. %v %v", c1, s1)
 	return
 }
 
@@ -3469,14 +5038,22 @@ type mClientMockSelf struct {
 	mock               *ClientMock
 	defaultExpectation *ClientMockSelfExpectation
 	expectations       []*ClientMockSelfExpectation
+
+	callArgs []*ClientMockSelfParams
+	mutex    sync.RWMutex
 }
 
 // ClientMockSelfExpectation specifies expectation struct of the Client.Self
 type ClientMockSelfExpectation struct {
-	mock *ClientMock
-
+	mock    *ClientMock
+	params  *ClientMockSelfParams
 	results *ClientMockSelfResults
 	Counter uint64
+}
+
+// ClientMockSelfParams contains parameters of the Client.Self
+type ClientMockSelfParams struct {
+	ctx Ctx
 }
 
 // ClientMockSelfResults contains results of the Client.Self
@@ -3486,7 +5063,7 @@ type ClientMockSelfResults struct {
 }
 
 // Expect sets up expected params for Client.Self
-func (mmSelf *mClientMockSelf) Expect() *mClientMockSelf {
+func (mmSelf *mClientMockSelf) Expect(ctx Ctx) *mClientMockSelf {
 	if mmSelf.mock.funcSelf != nil {
 		mmSelf.mock.t.Fatalf("ClientMock.Self mock is already set by Set")
 	}
@@ -3494,6 +5071,24 @@ func (mmSelf *mClientMockSelf) Expect() *mClientMockSelf {
 	if mmSelf.defaultExpectation == nil {
 		mmSelf.defaultExpectation = &ClientMockSelfExpectation{}
 	}
+
+	mmSelf.defaultExpectation.params = &ClientMockSelfParams{ctx}
+	for _, e := range mmSelf.expectations {
+		if minimock.Equal(e.params, mmSelf.defaultExpectation.params) {
+			mmSelf.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmSelf.defaultExpectation.params)
+		}
+	}
+
+	return mmSelf
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Self
+func (mmSelf *mClientMockSelf) Inspect(f func(ctx Ctx)) *mClientMockSelf {
+	if mmSelf.mock.inspectFuncSelf != nil {
+		mmSelf.mock.t.Fatalf("Inspect function is already set for ClientMock.Self")
+	}
+
+	mmSelf.mock.inspectFuncSelf = f
 
 	return mmSelf
 }
@@ -3512,7 +5107,7 @@ func (mmSelf *mClientMockSelf) Return(a1 AgentInfo, err error) *ClientMock {
 }
 
 //Set uses given function f to mock the Client.Self method
-func (mmSelf *mClientMockSelf) Set(f func() (a1 AgentInfo, err error)) *ClientMock {
+func (mmSelf *mClientMockSelf) Set(f func(ctx Ctx) (a1 AgentInfo, err error)) *ClientMock {
 	if mmSelf.defaultExpectation != nil {
 		mmSelf.mock.t.Fatalf("Default expectation is already set for the Client.Self method")
 	}
@@ -3525,24 +5120,68 @@ func (mmSelf *mClientMockSelf) Set(f func() (a1 AgentInfo, err error)) *ClientMo
 	return mmSelf.mock
 }
 
+// When sets expectation for the Client.Self which will trigger the result defined by the following
+// Then helper
+func (mmSelf *mClientMockSelf) When(ctx Ctx) *ClientMockSelfExpectation {
+	if mmSelf.mock.funcSelf != nil {
+		mmSelf.mock.t.Fatalf("ClientMock.Self mock is already set by Set")
+	}
+
+	expectation := &ClientMockSelfExpectation{
+		mock:   mmSelf.mock,
+		params: &ClientMockSelfParams{ctx},
+	}
+	mmSelf.expectations = append(mmSelf.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Client.Self return parameters for the expectation previously defined by the When method
+func (e *ClientMockSelfExpectation) Then(a1 AgentInfo, err error) *ClientMock {
+	e.results = &ClientMockSelfResults{a1, err}
+	return e.mock
+}
+
 // Self implements Client
-func (mmSelf *ClientMock) Self() (a1 AgentInfo, err error) {
+func (mmSelf *ClientMock) Self(ctx Ctx) (a1 AgentInfo, err error) {
 	mm_atomic.AddUint64(&mmSelf.beforeSelfCounter, 1)
 	defer mm_atomic.AddUint64(&mmSelf.afterSelfCounter, 1)
 
+	if mmSelf.inspectFuncSelf != nil {
+		mmSelf.inspectFuncSelf(ctx)
+	}
+
+	mm_params := &ClientMockSelfParams{ctx}
+
+	// Record call args
+	mmSelf.SelfMock.mutex.Lock()
+	mmSelf.SelfMock.callArgs = append(mmSelf.SelfMock.callArgs, mm_params)
+	mmSelf.SelfMock.mutex.Unlock()
+
+	for _, e := range mmSelf.SelfMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.a1, e.results.err
+		}
+	}
+
 	if mmSelf.SelfMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmSelf.SelfMock.defaultExpectation.Counter, 1)
+		mm_want := mmSelf.SelfMock.defaultExpectation.params
+		mm_got := ClientMockSelfParams{ctx}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmSelf.t.Errorf("ClientMock.Self got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
 
-		results := mmSelf.SelfMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmSelf.SelfMock.defaultExpectation.results
+		if mm_results == nil {
 			mmSelf.t.Fatal("No results are set for the ClientMock.Self")
 		}
-		return (*results).a1, (*results).err
+		return (*mm_results).a1, (*mm_results).err
 	}
 	if mmSelf.funcSelf != nil {
-		return mmSelf.funcSelf()
+		return mmSelf.funcSelf(ctx)
 	}
-	mmSelf.t.Fatalf("Unexpected call to ClientMock.Self.")
+	mmSelf.t.Fatalf("Unexpected call to ClientMock.Self. %v", ctx)
 	return
 }
 
@@ -3554,6 +5193,19 @@ func (mmSelf *ClientMock) SelfAfterCounter() uint64 {
 // SelfBeforeCounter returns a count of ClientMock.Self invocations
 func (mmSelf *ClientMock) SelfBeforeCounter() uint64 {
 	return mm_atomic.LoadUint64(&mmSelf.beforeSelfCounter)
+}
+
+// Calls returns a list of arguments used in each call to ClientMock.Self.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmSelf *mClientMockSelf) Calls() []*ClientMockSelfParams {
+	mmSelf.mutex.RLock()
+
+	argCopy := make([]*ClientMockSelfParams, len(mmSelf.callArgs))
+	copy(argCopy, mmSelf.callArgs)
+
+	mmSelf.mutex.RUnlock()
+
+	return argCopy
 }
 
 // MinimockSelfDone returns true if the count of the Self invocations corresponds
@@ -3580,13 +5232,17 @@ func (m *ClientMock) MinimockSelfDone() bool {
 func (m *ClientMock) MinimockSelfInspect() {
 	for _, e := range m.SelfMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Error("Expected call to ClientMock.Self")
+			m.t.Errorf("Expected call to ClientMock.Self with params: %#v", *e.params)
 		}
 	}
 
 	// if default expectation was set then invocations count should be greater than zero
 	if m.SelfMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSelfCounter) < 1 {
-		m.t.Error("Expected call to ClientMock.Self")
+		if m.SelfMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ClientMock.Self")
+		} else {
+			m.t.Errorf("Expected call to ClientMock.Self with params: %#v", *m.SelfMock.defaultExpectation.params)
+		}
 	}
 	// if func was set then invocations count should be greater than zero
 	if m.funcSelf != nil && mm_atomic.LoadUint64(&m.afterSelfCounter) < 1 {
@@ -3613,19 +5269,19 @@ type ClientMockServiceExpectation struct {
 
 // ClientMockServiceParams contains parameters of the Client.Service
 type ClientMockServiceParams struct {
-	dc      string
-	service string
-	tags    []string
+	c1 Ctx
+	s1 string
+	s2 ServiceQuery
 }
 
 // ClientMockServiceResults contains results of the Client.Service
 type ClientMockServiceResults struct {
-	sa1 []Service
+	ia1 []Instance
 	err error
 }
 
 // Expect sets up expected params for Client.Service
-func (mmService *mClientMockService) Expect(dc string, service string, tags ...string) *mClientMockService {
+func (mmService *mClientMockService) Expect(c1 Ctx, s1 string, s2 ServiceQuery) *mClientMockService {
 	if mmService.mock.funcService != nil {
 		mmService.mock.t.Fatalf("ClientMock.Service mock is already set by Set")
 	}
@@ -3634,7 +5290,7 @@ func (mmService *mClientMockService) Expect(dc string, service string, tags ...s
 		mmService.defaultExpectation = &ClientMockServiceExpectation{}
 	}
 
-	mmService.defaultExpectation.params = &ClientMockServiceParams{dc, service, tags}
+	mmService.defaultExpectation.params = &ClientMockServiceParams{c1, s1, s2}
 	for _, e := range mmService.expectations {
 		if minimock.Equal(e.params, mmService.defaultExpectation.params) {
 			mmService.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmService.defaultExpectation.params)
@@ -3644,8 +5300,19 @@ func (mmService *mClientMockService) Expect(dc string, service string, tags ...s
 	return mmService
 }
 
+// Inspect accepts an inspector function that has same arguments as the Client.Service
+func (mmService *mClientMockService) Inspect(f func(c1 Ctx, s1 string, s2 ServiceQuery)) *mClientMockService {
+	if mmService.mock.inspectFuncService != nil {
+		mmService.mock.t.Fatalf("Inspect function is already set for ClientMock.Service")
+	}
+
+	mmService.mock.inspectFuncService = f
+
+	return mmService
+}
+
 // Return sets up results that will be returned by Client.Service
-func (mmService *mClientMockService) Return(sa1 []Service, err error) *ClientMock {
+func (mmService *mClientMockService) Return(ia1 []Instance, err error) *ClientMock {
 	if mmService.mock.funcService != nil {
 		mmService.mock.t.Fatalf("ClientMock.Service mock is already set by Set")
 	}
@@ -3653,12 +5320,12 @@ func (mmService *mClientMockService) Return(sa1 []Service, err error) *ClientMoc
 	if mmService.defaultExpectation == nil {
 		mmService.defaultExpectation = &ClientMockServiceExpectation{mock: mmService.mock}
 	}
-	mmService.defaultExpectation.results = &ClientMockServiceResults{sa1, err}
+	mmService.defaultExpectation.results = &ClientMockServiceResults{ia1, err}
 	return mmService.mock
 }
 
 //Set uses given function f to mock the Client.Service method
-func (mmService *mClientMockService) Set(f func(dc string, service string, tags ...string) (sa1 []Service, err error)) *ClientMock {
+func (mmService *mClientMockService) Set(f func(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error)) *ClientMock {
 	if mmService.defaultExpectation != nil {
 		mmService.mock.t.Fatalf("Default expectation is already set for the Client.Service method")
 	}
@@ -3673,62 +5340,66 @@ func (mmService *mClientMockService) Set(f func(dc string, service string, tags 
 
 // When sets expectation for the Client.Service which will trigger the result defined by the following
 // Then helper
-func (mmService *mClientMockService) When(dc string, service string, tags ...string) *ClientMockServiceExpectation {
+func (mmService *mClientMockService) When(c1 Ctx, s1 string, s2 ServiceQuery) *ClientMockServiceExpectation {
 	if mmService.mock.funcService != nil {
 		mmService.mock.t.Fatalf("ClientMock.Service mock is already set by Set")
 	}
 
 	expectation := &ClientMockServiceExpectation{
 		mock:   mmService.mock,
-		params: &ClientMockServiceParams{dc, service, tags},
+		params: &ClientMockServiceParams{c1, s1, s2},
 	}
 	mmService.expectations = append(mmService.expectations, expectation)
 	return expectation
 }
 
 // Then sets up Client.Service return parameters for the expectation previously defined by the When method
-func (e *ClientMockServiceExpectation) Then(sa1 []Service, err error) *ClientMock {
-	e.results = &ClientMockServiceResults{sa1, err}
+func (e *ClientMockServiceExpectation) Then(ia1 []Instance, err error) *ClientMock {
+	e.results = &ClientMockServiceResults{ia1, err}
 	return e.mock
 }
 
 // Service implements Client
-func (mmService *ClientMock) Service(dc string, service string, tags ...string) (sa1 []Service, err error) {
+func (mmService *ClientMock) Service(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error) {
 	mm_atomic.AddUint64(&mmService.beforeServiceCounter, 1)
 	defer mm_atomic.AddUint64(&mmService.afterServiceCounter, 1)
 
-	params := &ClientMockServiceParams{dc, service, tags}
+	if mmService.inspectFuncService != nil {
+		mmService.inspectFuncService(c1, s1, s2)
+	}
+
+	mm_params := &ClientMockServiceParams{c1, s1, s2}
 
 	// Record call args
 	mmService.ServiceMock.mutex.Lock()
-	mmService.ServiceMock.callArgs = append(mmService.ServiceMock.callArgs, params)
+	mmService.ServiceMock.callArgs = append(mmService.ServiceMock.callArgs, mm_params)
 	mmService.ServiceMock.mutex.Unlock()
 
 	for _, e := range mmService.ServiceMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.sa1, e.results.err
+			return e.results.ia1, e.results.err
 		}
 	}
 
 	if mmService.ServiceMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmService.ServiceMock.defaultExpectation.Counter, 1)
-		want := mmService.ServiceMock.defaultExpectation.params
-		got := ClientMockServiceParams{dc, service, tags}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmService.t.Errorf("ClientMock.Service got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmService.ServiceMock.defaultExpectation.params
+		mm_got := ClientMockServiceParams{c1, s1, s2}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmService.t.Errorf("ClientMock.Service got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmService.ServiceMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmService.ServiceMock.defaultExpectation.results
+		if mm_results == nil {
 			mmService.t.Fatal("No results are set for the ClientMock.Service")
 		}
-		return (*results).sa1, (*results).err
+		return (*mm_results).ia1, (*mm_results).err
 	}
 	if mmService.funcService != nil {
-		return mmService.funcService(dc, service, tags...)
+		return mmService.funcService(c1, s1, s2)
 	}
-	mmService.t.Fatalf("Unexpected call to ClientMock.Service. %v %v %v", dc, service, tags)
+	mmService.t.Fatalf("Unexpected call to ClientMock.Service. %v %v %v", c1, s1, s2)
 	return
 }
 
@@ -3816,7 +5487,8 @@ type ClientMockServicesExpectation struct {
 
 // ClientMockServicesParams contains parameters of the Client.Services
 type ClientMockServicesParams struct {
-	dc string
+	c1 Ctx
+	s1 ServicesQuery
 }
 
 // ClientMockServicesResults contains results of the Client.Services
@@ -3826,7 +5498,7 @@ type ClientMockServicesResults struct {
 }
 
 // Expect sets up expected params for Client.Services
-func (mmServices *mClientMockServices) Expect(dc string) *mClientMockServices {
+func (mmServices *mClientMockServices) Expect(c1 Ctx, s1 ServicesQuery) *mClientMockServices {
 	if mmServices.mock.funcServices != nil {
 		mmServices.mock.t.Fatalf("ClientMock.Services mock is already set by Set")
 	}
@@ -3835,12 +5507,23 @@ func (mmServices *mClientMockServices) Expect(dc string) *mClientMockServices {
 		mmServices.defaultExpectation = &ClientMockServicesExpectation{}
 	}
 
-	mmServices.defaultExpectation.params = &ClientMockServicesParams{dc}
+	mmServices.defaultExpectation.params = &ClientMockServicesParams{c1, s1}
 	for _, e := range mmServices.expectations {
 		if minimock.Equal(e.params, mmServices.defaultExpectation.params) {
 			mmServices.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmServices.defaultExpectation.params)
 		}
 	}
+
+	return mmServices
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.Services
+func (mmServices *mClientMockServices) Inspect(f func(c1 Ctx, s1 ServicesQuery)) *mClientMockServices {
+	if mmServices.mock.inspectFuncServices != nil {
+		mmServices.mock.t.Fatalf("Inspect function is already set for ClientMock.Services")
+	}
+
+	mmServices.mock.inspectFuncServices = f
 
 	return mmServices
 }
@@ -3859,7 +5542,7 @@ func (mmServices *mClientMockServices) Return(m1 map[string][]string, err error)
 }
 
 //Set uses given function f to mock the Client.Services method
-func (mmServices *mClientMockServices) Set(f func(dc string) (m1 map[string][]string, err error)) *ClientMock {
+func (mmServices *mClientMockServices) Set(f func(c1 Ctx, s1 ServicesQuery) (m1 map[string][]string, err error)) *ClientMock {
 	if mmServices.defaultExpectation != nil {
 		mmServices.mock.t.Fatalf("Default expectation is already set for the Client.Services method")
 	}
@@ -3874,14 +5557,14 @@ func (mmServices *mClientMockServices) Set(f func(dc string) (m1 map[string][]st
 
 // When sets expectation for the Client.Services which will trigger the result defined by the following
 // Then helper
-func (mmServices *mClientMockServices) When(dc string) *ClientMockServicesExpectation {
+func (mmServices *mClientMockServices) When(c1 Ctx, s1 ServicesQuery) *ClientMockServicesExpectation {
 	if mmServices.mock.funcServices != nil {
 		mmServices.mock.t.Fatalf("ClientMock.Services mock is already set by Set")
 	}
 
 	expectation := &ClientMockServicesExpectation{
 		mock:   mmServices.mock,
-		params: &ClientMockServicesParams{dc},
+		params: &ClientMockServicesParams{c1, s1},
 	}
 	mmServices.expectations = append(mmServices.expectations, expectation)
 	return expectation
@@ -3894,19 +5577,23 @@ func (e *ClientMockServicesExpectation) Then(m1 map[string][]string, err error) 
 }
 
 // Services implements Client
-func (mmServices *ClientMock) Services(dc string) (m1 map[string][]string, err error) {
+func (mmServices *ClientMock) Services(c1 Ctx, s1 ServicesQuery) (m1 map[string][]string, err error) {
 	mm_atomic.AddUint64(&mmServices.beforeServicesCounter, 1)
 	defer mm_atomic.AddUint64(&mmServices.afterServicesCounter, 1)
 
-	params := &ClientMockServicesParams{dc}
+	if mmServices.inspectFuncServices != nil {
+		mmServices.inspectFuncServices(c1, s1)
+	}
+
+	mm_params := &ClientMockServicesParams{c1, s1}
 
 	// Record call args
 	mmServices.ServicesMock.mutex.Lock()
-	mmServices.ServicesMock.callArgs = append(mmServices.ServicesMock.callArgs, params)
+	mmServices.ServicesMock.callArgs = append(mmServices.ServicesMock.callArgs, mm_params)
 	mmServices.ServicesMock.mutex.Unlock()
 
 	for _, e := range mmServices.ServicesMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.m1, e.results.err
 		}
@@ -3914,22 +5601,22 @@ func (mmServices *ClientMock) Services(dc string) (m1 map[string][]string, err e
 
 	if mmServices.ServicesMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmServices.ServicesMock.defaultExpectation.Counter, 1)
-		want := mmServices.ServicesMock.defaultExpectation.params
-		got := ClientMockServicesParams{dc}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmServices.t.Errorf("ClientMock.Services got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmServices.ServicesMock.defaultExpectation.params
+		mm_got := ClientMockServicesParams{c1, s1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmServices.t.Errorf("ClientMock.Services got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmServices.ServicesMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmServices.ServicesMock.defaultExpectation.results
+		if mm_results == nil {
 			mmServices.t.Fatal("No results are set for the ClientMock.Services")
 		}
-		return (*results).m1, (*results).err
+		return (*mm_results).m1, (*mm_results).err
 	}
 	if mmServices.funcServices != nil {
-		return mmServices.funcServices(dc)
+		return mmServices.funcServices(c1, s1)
 	}
-	mmServices.t.Fatalf("Unexpected call to ClientMock.Services. %v", dc)
+	mmServices.t.Fatalf("Unexpected call to ClientMock.Services. %v %v", c1, s1)
 	return
 }
 
@@ -3998,26 +5685,253 @@ func (m *ClientMock) MinimockServicesInspect() {
 	}
 }
 
+type mClientMockSetACLToken struct {
+	mock               *ClientMock
+	defaultExpectation *ClientMockSetACLTokenExpectation
+	expectations       []*ClientMockSetACLTokenExpectation
+
+	callArgs []*ClientMockSetACLTokenParams
+	mutex    sync.RWMutex
+}
+
+// ClientMockSetACLTokenExpectation specifies expectation struct of the Client.SetACLToken
+type ClientMockSetACLTokenExpectation struct {
+	mock    *ClientMock
+	params  *ClientMockSetACLTokenParams
+	results *ClientMockSetACLTokenResults
+	Counter uint64
+}
+
+// ClientMockSetACLTokenParams contains parameters of the Client.SetACLToken
+type ClientMockSetACLTokenParams struct {
+	ctx   Ctx
+	kind  string
+	token string
+}
+
+// ClientMockSetACLTokenResults contains results of the Client.SetACLToken
+type ClientMockSetACLTokenResults struct {
+	err error
+}
+
+// Expect sets up expected params for Client.SetACLToken
+func (mmSetACLToken *mClientMockSetACLToken) Expect(ctx Ctx, kind string, token string) *mClientMockSetACLToken {
+	if mmSetACLToken.mock.funcSetACLToken != nil {
+		mmSetACLToken.mock.t.Fatalf("ClientMock.SetACLToken mock is already set by Set")
+	}
+
+	if mmSetACLToken.defaultExpectation == nil {
+		mmSetACLToken.defaultExpectation = &ClientMockSetACLTokenExpectation{}
+	}
+
+	mmSetACLToken.defaultExpectation.params = &ClientMockSetACLTokenParams{ctx, kind, token}
+	for _, e := range mmSetACLToken.expectations {
+		if minimock.Equal(e.params, mmSetACLToken.defaultExpectation.params) {
+			mmSetACLToken.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmSetACLToken.defaultExpectation.params)
+		}
+	}
+
+	return mmSetACLToken
+}
+
+// Inspect accepts an inspector function that has same arguments as the Client.SetACLToken
+func (mmSetACLToken *mClientMockSetACLToken) Inspect(f func(ctx Ctx, kind string, token string)) *mClientMockSetACLToken {
+	if mmSetACLToken.mock.inspectFuncSetACLToken != nil {
+		mmSetACLToken.mock.t.Fatalf("Inspect function is already set for ClientMock.SetACLToken")
+	}
+
+	mmSetACLToken.mock.inspectFuncSetACLToken = f
+
+	return mmSetACLToken
+}
+
+// Return sets up results that will be returned by Client.SetACLToken
+func (mmSetACLToken *mClientMockSetACLToken) Return(err error) *ClientMock {
+	if mmSetACLToken.mock.funcSetACLToken != nil {
+		mmSetACLToken.mock.t.Fatalf("ClientMock.SetACLToken mock is already set by Set")
+	}
+
+	if mmSetACLToken.defaultExpectation == nil {
+		mmSetACLToken.defaultExpectation = &ClientMockSetACLTokenExpectation{mock: mmSetACLToken.mock}
+	}
+	mmSetACLToken.defaultExpectation.results = &ClientMockSetACLTokenResults{err}
+	return mmSetACLToken.mock
+}
+
+//Set uses given function f to mock the Client.SetACLToken method
+func (mmSetACLToken *mClientMockSetACLToken) Set(f func(ctx Ctx, kind string, token string) (err error)) *ClientMock {
+	if mmSetACLToken.defaultExpectation != nil {
+		mmSetACLToken.mock.t.Fatalf("Default expectation is already set for the Client.SetACLToken method")
+	}
+
+	if len(mmSetACLToken.expectations) > 0 {
+		mmSetACLToken.mock.t.Fatalf("Some expectations are already set for the Client.SetACLToken method")
+	}
+
+	mmSetACLToken.mock.funcSetACLToken = f
+	return mmSetACLToken.mock
+}
+
+// When sets expectation for the Client.SetACLToken which will trigger the result defined by the following
+// Then helper
+func (mmSetACLToken *mClientMockSetACLToken) When(ctx Ctx, kind string, token string) *ClientMockSetACLTokenExpectation {
+	if mmSetACLToken.mock.funcSetACLToken != nil {
+		mmSetACLToken.mock.t.Fatalf("ClientMock.SetACLToken mock is already set by Set")
+	}
+
+	expectation := &ClientMockSetACLTokenExpectation{
+		mock:   mmSetACLToken.mock,
+		params: &ClientMockSetACLTokenParams{ctx, kind, token},
+	}
+	mmSetACLToken.expectations = append(mmSetACLToken.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Client.SetACLToken return parameters for the expectation previously defined by the When method
+func (e *ClientMockSetACLTokenExpectation) Then(err error) *ClientMock {
+	e.results = &ClientMockSetACLTokenResults{err}
+	return e.mock
+}
+
+// SetACLToken implements Client
+func (mmSetACLToken *ClientMock) SetACLToken(ctx Ctx, kind string, token string) (err error) {
+	mm_atomic.AddUint64(&mmSetACLToken.beforeSetACLTokenCounter, 1)
+	defer mm_atomic.AddUint64(&mmSetACLToken.afterSetACLTokenCounter, 1)
+
+	if mmSetACLToken.inspectFuncSetACLToken != nil {
+		mmSetACLToken.inspectFuncSetACLToken(ctx, kind, token)
+	}
+
+	mm_params := &ClientMockSetACLTokenParams{ctx, kind, token}
+
+	// Record call args
+	mmSetACLToken.SetACLTokenMock.mutex.Lock()
+	mmSetACLToken.SetACLTokenMock.callArgs = append(mmSetACLToken.SetACLTokenMock.callArgs, mm_params)
+	mmSetACLToken.SetACLTokenMock.mutex.Unlock()
+
+	for _, e := range mmSetACLToken.SetACLTokenMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.err
+		}
+	}
+
+	if mmSetACLToken.SetACLTokenMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmSetACLToken.SetACLTokenMock.defaultExpectation.Counter, 1)
+		mm_want := mmSetACLToken.SetACLTokenMock.defaultExpectation.params
+		mm_got := ClientMockSetACLTokenParams{ctx, kind, token}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmSetACLToken.t.Errorf("ClientMock.SetACLToken got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmSetACLToken.SetACLTokenMock.defaultExpectation.results
+		if mm_results == nil {
+			mmSetACLToken.t.Fatal("No results are set for the ClientMock.SetACLToken")
+		}
+		return (*mm_results).err
+	}
+	if mmSetACLToken.funcSetACLToken != nil {
+		return mmSetACLToken.funcSetACLToken(ctx, kind, token)
+	}
+	mmSetACLToken.t.Fatalf("Unexpected call to ClientMock.SetACLToken. %v %v %v", ctx, kind, token)
+	return
+}
+
+// SetACLTokenAfterCounter returns a count of finished ClientMock.SetACLToken invocations
+func (mmSetACLToken *ClientMock) SetACLTokenAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSetACLToken.afterSetACLTokenCounter)
+}
+
+// SetACLTokenBeforeCounter returns a count of ClientMock.SetACLToken invocations
+func (mmSetACLToken *ClientMock) SetACLTokenBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmSetACLToken.beforeSetACLTokenCounter)
+}
+
+// Calls returns a list of arguments used in each call to ClientMock.SetACLToken.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmSetACLToken *mClientMockSetACLToken) Calls() []*ClientMockSetACLTokenParams {
+	mmSetACLToken.mutex.RLock()
+
+	argCopy := make([]*ClientMockSetACLTokenParams, len(mmSetACLToken.callArgs))
+	copy(argCopy, mmSetACLToken.callArgs)
+
+	mmSetACLToken.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockSetACLTokenDone returns true if the count of the SetACLToken invocations corresponds
+// the number of defined expectations
+func (m *ClientMock) MinimockSetACLTokenDone() bool {
+	for _, e := range m.SetACLTokenMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SetACLTokenMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSetACLTokenCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSetACLToken != nil && mm_atomic.LoadUint64(&m.afterSetACLTokenCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockSetACLTokenInspect logs each unmet expectation
+func (m *ClientMock) MinimockSetACLTokenInspect() {
+	for _, e := range m.SetACLTokenMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to ClientMock.SetACLToken with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.SetACLTokenMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterSetACLTokenCounter) < 1 {
+		if m.SetACLTokenMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to ClientMock.SetACLToken")
+		} else {
+			m.t.Errorf("Expected call to ClientMock.SetACLToken with params: %#v", *m.SetACLTokenMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcSetACLToken != nil && mm_atomic.LoadUint64(&m.afterSetACLTokenCounter) < 1 {
+		m.t.Error("Expected call to ClientMock.SetACLToken")
+	}
+}
+
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *ClientMock) MinimockFinish() {
 	if !m.minimockDone() {
+		m.MinimockConnectInspect()
+
 		m.MinimockCreateSessionInspect()
 
-		m.MinimockDatacentersInspect()
+		m.MinimockDataCentersInspect()
 
 		m.MinimockDeleteInspect()
 
 		m.MinimockDeleteSessionInspect()
 
+		m.MinimockForceLeaveInspect()
+
 		m.MinimockGetInspect()
 
+		m.MinimockJoinInspect()
+
 		m.MinimockKeysInspect()
+
+		m.MinimockLeaveInspect()
 
 		m.MinimockListSessionsInspect()
 
 		m.MinimockMaintenanceModeInspect()
 
 		m.MinimockMembersInspect()
+
+		m.MinimockMetricsInspect()
 
 		m.MinimockNodeInspect()
 
@@ -4040,6 +5954,8 @@ func (m *ClientMock) MinimockFinish() {
 		m.MinimockServiceInspect()
 
 		m.MinimockServicesInspect()
+
+		m.MinimockSetACLTokenInspect()
 		m.t.FailNow()
 	}
 }
@@ -4063,15 +5979,20 @@ func (m *ClientMock) MinimockWait(timeout mm_time.Duration) {
 func (m *ClientMock) minimockDone() bool {
 	done := true
 	return done &&
+		m.MinimockConnectDone() &&
 		m.MinimockCreateSessionDone() &&
-		m.MinimockDatacentersDone() &&
+		m.MinimockDataCentersDone() &&
 		m.MinimockDeleteDone() &&
 		m.MinimockDeleteSessionDone() &&
+		m.MinimockForceLeaveDone() &&
 		m.MinimockGetDone() &&
+		m.MinimockJoinDone() &&
 		m.MinimockKeysDone() &&
+		m.MinimockLeaveDone() &&
 		m.MinimockListSessionsDone() &&
 		m.MinimockMaintenanceModeDone() &&
 		m.MinimockMembersDone() &&
+		m.MinimockMetricsDone() &&
 		m.MinimockNodeDone() &&
 		m.MinimockNodesDone() &&
 		m.MinimockParticipateDone() &&
@@ -4082,5 +6003,6 @@ func (m *ClientMock) minimockDone() bool {
 		m.MinimockRenewSessionDone() &&
 		m.MinimockSelfDone() &&
 		m.MinimockServiceDone() &&
-		m.MinimockServicesDone()
+		m.MinimockServicesDone() &&
+		m.MinimockSetACLTokenDone()
 }

@@ -22,6 +22,9 @@ const (
 )
 
 type SessionConfig struct {
+	// The DC in which the node holding the session.
+	DC string `json:"-"` // not part of the official API
+
 	// The node with which the session is associated. Typically, this should be
 	// set to the node name of the local consul agent. That information can be
 	// retrieved using the Self endpoint.
@@ -68,15 +71,48 @@ type sessionConfigFormat3 struct {
 	Behavior  string  `json:"Behavior"`
 }
 
-//go:generate go run github.com/gojuno/minimock/cmd/minimock -g -i Session -s _mock.go
+// SessionQuery is used to define values for each of the optional parameters
+// on the session endpoint.
+type SessionQuery struct {
+	// ID of the session for which the query is regarding.
+	ID SessionID
+
+	// DC indicates which dc to query.
+	//
+	// If blank, this will default to the dc that the queried agent is in.
+	DC string
+}
+
+//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -g -i Session -s _mock.go
 
 type Session interface {
-	CreateSession(dc string, config SessionConfig) (SessionID, error)
-	DeleteSession(dc string, id SessionID) error
-	ReadSession(dc string, id SessionID) (SessionConfig, error)
-	ListSessions(dc, node string) (map[SessionID]SessionConfig, error)
-	RenewSession(dc string, id SessionID) (time.Duration, error)
+	// CreateSession will initialize a new session.
+	//
+	// https://www.consul.io/api/session.html#create-session
+	CreateSession(Ctx, SessionConfig) (SessionID, error)
+
+	// DeleteSession will delete session of id.
+	//
+	// https://www.consul.io/api/session.html#delete-session
+	DeleteSession(Ctx, SessionQuery) error
+
+	// ReadSession will return the session information for id.
+	//
+	// https://www.consul.io/api/session.html#read-session
+	ReadSession(Ctx, SessionQuery) (SessionConfig, error)
+
+	// ListSessions will list every session on node.
+	//
+	// https://www.consul.io/api/session.html#list-sessions-for-node
+	ListSessions(ctx Ctx, dc, node string) (map[SessionID]SessionConfig, error)
+
+	// RenewSession will renew session of id.
+	//
+	// https://www.consul.io/api/session.html#renew-session
+	RenewSession(Ctx, SessionQuery) (time.Duration, error)
 }
+
+var _ Session = (*client)(nil)
 
 func internalizeSessionConfig(config SessionConfig) (sessionConfigFormat2, error) {
 	var isc sessionConfigFormat2
@@ -109,7 +145,9 @@ func internalizeSessionConfig(config SessionConfig) (sessionConfigFormat2, error
 	return isc, nil
 }
 
-func (c *client) CreateSession(dc string, config SessionConfig) (SessionID, error) {
+func (c *client) CreateSession(ctx Ctx, config SessionConfig) (SessionID, error) {
+	dc := config.DC
+
 	isc, err := internalizeSessionConfig(config)
 	if err != nil {
 		return "", err
@@ -126,37 +164,43 @@ func (c *client) CreateSession(dc string, config SessionConfig) (SessionID, erro
 		return "", err
 	}
 
-	if err := c.put(path, string(body), &response); err != nil {
+	if err := c.put(ctx, path, string(body), &response); err != nil {
 		return "", errors.Wrap(err, "failed to create session")
 	}
 
 	return response.ID, nil
 }
 
-func (c *client) ReadSession(dc string, id SessionID) (SessionConfig, error) {
+func (c *client) ReadSession(ctx Ctx, query SessionQuery) (SessionConfig, error) {
+	id := query.ID
+	dc := query.DC
+
 	path := fixup("/v1/session/info", string(id), param("dc", dc))
 
 	var response []sessionConfigFormat3
-	if err := c.get(path, &response); err != nil {
+	if err := c.get(ctx, path, &response); err != nil {
 		return SessionConfig{}, errors.Wrap(err, "failed to read session")
 	}
 
-	return sessionFromFormat3(response)
+	return sessionFromFormat3(response, dc)
 }
 
-func (c *client) RenewSession(dc string, id SessionID) (time.Duration, error) {
+func (c *client) RenewSession(ctx Ctx, query SessionQuery) (time.Duration, error) {
+	id := query.ID
+	dc := query.DC
+
 	path := fixup("/v1/session/renew", string(id), param("dc", dc))
 
 	var response []sessionConfigFormat3
-	if err := c.put(path, "", &response); err != nil {
+	if err := c.put(ctx, path, "", &response); err != nil {
 		return 0, errors.Wrap(err, "failed to renew session")
 	}
 
-	session, err := sessionFromFormat3(response)
+	session, err := sessionFromFormat3(response, dc)
 	return session.TTL, err
 }
 
-func sessionFromFormat3(response []sessionConfigFormat3) (SessionConfig, error) {
+func sessionFromFormat3(response []sessionConfigFormat3, dc string) (SessionConfig, error) {
 	if len(response) < 1 {
 		return SessionConfig{}, errors.New("read session returned no sessions")
 	}
@@ -173,6 +217,7 @@ func sessionFromFormat3(response []sessionConfigFormat3) (SessionConfig, error) 
 	}
 
 	return SessionConfig{
+		DC:        dc,
 		Node:      session.Node,
 		Name:      session.Name,
 		LockDelay: time.Duration(session.LockDelay),
@@ -181,11 +226,11 @@ func sessionFromFormat3(response []sessionConfigFormat3) (SessionConfig, error) 
 	}, nil
 }
 
-func (c *client) ListSessions(dc, node string) (map[SessionID]SessionConfig, error) {
+func (c *client) ListSessions(ctx Ctx, dc, node string) (map[SessionID]SessionConfig, error) {
 	path := fixup("/v1/session/node/", node, param("dc", dc))
 
 	var response []sessionConfigFormat3
-	if err := c.get(path, &response); err != nil {
+	if err := c.get(ctx, path, &response); err != nil {
 		return nil, errors.Wrap(err, "failed to list sessions")
 	}
 
@@ -209,10 +254,13 @@ func (c *client) ListSessions(dc, node string) (map[SessionID]SessionConfig, err
 	return configs, nil
 }
 
-func (c *client) DeleteSession(dc string, id SessionID) error {
+func (c *client) DeleteSession(ctx Ctx, query SessionQuery) error {
+	id := query.ID
+	dc := query.DC
+
 	path := fixup("/v1/session/destroy", string(id), param("dc", dc))
 
-	if err := c.put(path, "", nil); err != nil {
+	if err := c.put(ctx, path, "", nil); err != nil {
 		return errors.Wrap(err, "failed to destroy session")
 	}
 

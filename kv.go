@@ -2,99 +2,169 @@ package consulapi
 
 import (
 	"encoding/base64"
+	"net/http"
 	"sort"
 
 	"github.com/pkg/errors"
 )
 
-//go:generate go run github.com/gojuno/minimock/cmd/minimock -g -i KV -s _mock.go
+type Query struct {
+	DC string
+}
 
-// A KV represents the key-value store built into consul.
+//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -g -i KV -s _mock.go
+
+// A KV can access the key-value store of consul.
 //
-// Although consul supports arbitrary bytes as keys and values,
-// this library assumes all keys and values are strings. This
-// helps simplify code for clients, the 99% use case for which
-// is reading and writing small configuration values and other
-// string-y information.
+// The consul KV store is useful for storing small values of information. It is
+// intended to be used to store things like service configuration and other
+// meta-data. The maximum size of a value is 512KiB.
 //
-// Each method allows for specifying a particular dc from which
-// to set or retrieve information. If left unset, the dc defaults
-// to the dc associated with the consul agent being communicated
-// with.
+// Each DC contains its own KV store. The data in a KV store is not replicated
+// across DCs.
+//
+// https://www.consul.io/api/kv.html
 type KV interface {
+
 	// Get will return the value defined at path, for dc.
-	Get(dc, path string) (string, error)
+	Get(Ctx, string, Query) (string, error)
+
 	// Put will set value at path, in dc.
-	Put(dc, path, value string) error
+	Put(Ctx, string, string, Query) error
+
 	// Delete will remove the value at path, in dc.
-	Delete(dc, path string) error
+	Delete(Ctx, string, Query) error
+
 	// Keys will list all subpaths in asciibetical order.
 	// The returned paths may be terminal (ie, the value is
 	// stored content) or they may be further traversable like
 	// a directory listing, in dc.
-	Keys(dc, path string) ([]string, error)
+	Keys(Ctx, string, Query) ([]string, error)
+
 	// Recurse will recursively descend through path, collecting
 	// all KV pairs along the way, in dc.
-	Recurse(dc, path string) ([][2]string, error)
+	Recurse(Ctx, string, Query) ([]Pair, error)
 }
 
-type value struct {
-	Key   string `json:"Key"`
-	Value string `json:"Value"`
+func (c *client) Get(ctx Ctx, path string, query Query) (string, error) {
+	var params [][2]string
+
+	if query.DC != "" {
+		params = append(params, [2]string{"dc", query.DC})
+	}
+
+	path = fixup("/v1/kv", path, params...)
+
+	var values []Pair
+
+	if err := c.get(ctx, path, &values); err != nil {
+		if re, ok := err.(*RequestError); ok {
+			if re.StatusCode() == http.StatusNotFound {
+				return "", errors.Errorf("key %q does not exist", path)
+			}
+		}
+		return "", err
+	}
+
+	bs, err := base64.StdEncoding.DecodeString(values[0].Value)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bs), nil
 }
 
-func (c *client) Keys(dc, path string) ([]string, error) {
-	path = fixup("/v1/kv", path, [2]string{"dc", dc}, [2]string{"keys", "true"})
+func (c *client) Put(ctx Ctx, path, value string, query Query) error {
+	var params [][2]string
+
+	if query.DC != "" {
+		params = append(params, [2]string{"dc", query.DC})
+	}
+
+	path = fixup("/v1/kv", path, params...)
+
+	if err := c.put(ctx, path, value, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *client) Delete(ctx Ctx, path string, query Query) error {
+	var params [][2]string
+
+	if query.DC != "" {
+		params = append(params, [2]string{"dc", query.DC})
+	}
+
+	path = fixup("/v1/kv", path, params...)
+
+	if err := c.delete(ctx, path); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *client) Keys(ctx Ctx, path string, query Query) ([]string, error) {
+	var params [][2]string
+
+	if query.DC != "" {
+		params = append(params, [2]string{"dc", query.DC})
+	}
+
+	params = append(params, [2]string{"keys", "true"})
+
+	path = fixup("/v1/kv", path, params...)
+
 	var keys []string
-	err := c.get(path, &keys)
-	sort.Strings(keys)
-	return keys, err
-}
-
-func (c *client) Recurse(dc, path string) ([][2]string, error) {
-	path = fixup("/v1/kv", path, [2]string{"dc", dc}, [2]string{"recurse", "true"})
-	var values []value
-	if err := c.get(path, &values); err != nil {
+	if err := c.get(ctx, path, &keys); err != nil {
 		return nil, err
 	}
-	kvs := make([][2]string, 0, len(values))
+
+	sort.Strings(keys)
+	return keys, nil
+}
+
+func (c *client) Recurse(ctx Ctx, path string, query Query) ([]Pair, error) {
+	var params [][2]string
+
+	if query.DC != "" {
+		params = append(params, [2]string{"dc", query.DC})
+	}
+
+	params = append(params, [2]string{"recurse", "true"})
+
+	rPath := fixup("/v1/kv", path, params...)
+
+	var values []Pair
+
+	if err := c.get(ctx, rPath, &values); err != nil {
+		if re, ok := err.(*RequestError); ok {
+			if re.StatusCode() == http.StatusNotFound {
+				return nil, errors.Errorf("key-space %q does not exist", path)
+			}
+		}
+		return nil, err
+	}
+
+	kvPairs := make([]Pair, 0, len(values))
+
 	for _, value := range values {
 		decoded, err := base64.StdEncoding.DecodeString(value.Value)
 		if err != nil {
 			return nil, err
 		}
-		kvs = append(kvs, [2]string{
-			value.Key,
-			string(decoded),
+
+		kvPairs = append(kvPairs, Pair{
+			Key:   value.Key,
+			Value: string(decoded),
 		})
 	}
-	sort.Slice(kvs, func(i, j int) bool {
-		return kvs[i][0] < kvs[j][0]
+
+	sort.Slice(kvPairs, func(i, j int) bool {
+		return kvPairs[i].Key < kvPairs[j].Key
 	})
-	return kvs, nil
-}
 
-func (c *client) Get(dc, path string) (string, error) {
-	path = fixup("/v1/kv", path, [2]string{"dc", dc})
-
-	var values []value
-	if err := c.get(path, &values); err != nil {
-		return "", err
-	}
-	if len(values) == 0 {
-		return "", errors.Errorf("key %q does not exist", path)
-	}
-
-	bs, err := base64.StdEncoding.DecodeString(values[0].Value)
-	return string(bs), err
-}
-
-func (c *client) Put(dc, path, value string) error {
-	path = fixup("/v1/kv", path, [2]string{"dc", dc})
-	return c.put(path, value, nil)
-}
-
-func (c *client) Delete(dc, path string) error {
-	path = fixup("/v1/kv", path, [2]string{"dc", dc})
-	return c.delete(path)
+	return kvPairs, nil
 }

@@ -1,9 +1,0 @@
-version: '3'
-
-services:
-  myconsul:
-    build:
-      context: .
-      dockerfile: Dockerfile-consul
-    ports:
-      - "8500:8500"

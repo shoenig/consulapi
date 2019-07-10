@@ -1,4 +1,0 @@
-FROM consul
-
-ADD ./consul-config /consul/config
-

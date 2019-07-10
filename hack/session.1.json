@@ -1,8 +1,0 @@
-{
-  "LockDelay": "15s",
-  "Name": "session1-lock",
-  "Node": "dev-desktop1",
-  "Checks": [],
-  "Behavior": "release",
-  "TTL": "10s"
-}

@@ -1,0 +1,24 @@
+[
+  {
+    "Name": "otherdc-systems1.otherdc",
+    "Addr": "10.3.0.19",
+    "Port": 8301,
+    "Tags": {
+      "build": "1.3.0:e8757838",
+      "dc": "otherdc",
+      "id": "674036a8-5c74-1d67-368b-2fb3b7f3893d",
+      "role": "node",
+      "segment": "",
+      "vsn": "2",
+      "vsn_max": "3",
+      "vsn_min": "2"
+    },
+    "Status": 1,
+    "ProtocolMin": 1,
+    "ProtocolMax": 5,
+    "ProtocolCur": 2,
+    "DelegateMin": 2,
+    "DelegateMax": 5,
+    "DelegateCur": 4
+  }
+]

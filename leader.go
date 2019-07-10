@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -52,23 +53,23 @@ func (lc LeadershipConfig) name() string {
 // If the implementation returns from the function before the context is
 // cancelled, leadership will be abdicated, the context will be cancelled,
 // and no further action should be taken until elected leader again.
-type AsLeaderFunc func(context.Context) error
+type AsLeaderFunc func(Ctx) error
 
-//go:generate go run github.com/gojuno/minimock/cmd/minimock -g -i Candidate -s _mock.go
+//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -g -i Candidate -s _mock.go
 
 // A Candidate implementation is able to Participate in leadership elections.
 type Candidate interface {
-	Participate(LeadershipConfig, AsLeaderFunc) (LeaderSession, error)
+	Participate(Ctx, LeadershipConfig, AsLeaderFunc) (LeaderSession, error)
 }
 
-//go:generate go run github.com/gojuno/minimock/cmd/minimock -g -i LeaderSession -s _mock.go
+//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -g -i LeaderSession -s _mock.go
 
 // A LeaderSession is used to inspect and manage the underlying consul session
 // being used to participate in leadership elections.
 type LeaderSession interface {
-	Abdicate() error
-	SessionID() string
-	Current() (string, error)
+	Abdicate(Ctx) error
+	Current(Ctx) (string, error)
+	SessionID(Ctx) string
 }
 
 type leadershipManager struct {
@@ -84,8 +85,8 @@ type leadershipManager struct {
 	asLeader AsLeaderFunc
 }
 
-func (c *client) Participate(opts LeadershipConfig, f AsLeaderFunc) (LeaderSession, error) {
-	self, err := c.Self()
+func (c *client) Participate(ctx Ctx, opts LeadershipConfig, f AsLeaderFunc) (LeaderSession, error) {
+	self, err := c.Self(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -110,16 +111,19 @@ func (lm *leadershipManager) maintainSession(opts LeadershipConfig) {
 	for {
 
 		if err := lm.createSession(opts); err != nil {
-			lm.client.opts.Logger.Printf("failed to create session, try again in 3s: %v", err)
+			lm.client.log.Warnf("failed to create session, try again in 3s: %v", err)
 			time.Sleep(3 * time.Second)
 			continue
 		}
 
 		// (lock delay covers the fence post)
 		for range time.Tick(lm.sessionTTL) {
-			_, err := lm.client.RenewSession("", lm.getSessionID())
-			if err != nil {
-				lm.client.opts.Logger.Printf("failed to renew session, will need to create a new one")
+			ctx := context.TODO()
+			if _, err := lm.client.RenewSession(ctx, SessionQuery{
+				DC: "",
+				ID: lm.getSessionID(),
+			}); err != nil {
+				lm.client.log.Warnf("failed to renew session, will need to create a new one")
 				break
 			}
 		}
@@ -127,8 +131,13 @@ func (lm *leadershipManager) maintainSession(opts LeadershipConfig) {
 }
 
 func (lm *leadershipManager) createSession(opts LeadershipConfig) error {
-	lm.client.opts.Logger.Printf("attempting to establish new session")
-	sessionID, err := lm.client.CreateSession("", SessionConfig{
+	lm.client.log.Tracef("attempting to establish new session")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	sessionID, err := lm.client.CreateSession(ctx, SessionConfig{
+		// DC not used
 		Node:      lm.self.Name,
 		Name:      opts.name(),
 		LockDelay: opts.LockDelay,
@@ -140,7 +149,7 @@ func (lm *leadershipManager) createSession(opts LeadershipConfig) error {
 	}
 
 	lm.setSessionID(sessionID)
-	lm.client.opts.Logger.Printf("established new session with ID: %s", sessionID)
+	lm.client.log.Tracef("established new session with ID: %s", sessionID)
 	return nil
 }
 
@@ -156,27 +165,27 @@ func (lm *leadershipManager) getSessionID() SessionID {
 	return value.(SessionID)
 }
 
-func (lm *leadershipManager) Abdicate() error {
+func (lm *leadershipManager) Abdicate(ctx Ctx) error {
 	lm.isLeader.Store(false)
 
 	path := fixup("/v1/kv/", lm.key, param("release", string(lm.getSessionID())))
 
 	var response bool
-	if err := lm.client.put(path, lm.value(), &response); err != nil {
+	if err := lm.client.put(ctx, path, lm.value(), &response); err != nil {
 		return errors.Wrap(err, "failed to abdicate leadership")
 	}
 
 	return nil
 }
 
-func (lm *leadershipManager) Current() (string, error) {
+func (lm *leadershipManager) Current(ctx Ctx) (string, error) {
 	path := fixup("/v1/kv/", lm.key)
 
 	var response []struct {
 		Value string `json:"value"`
 	}
 
-	if err := lm.client.get(path, &response); err != nil {
+	if err := lm.client.get(ctx, path, &response); err != nil {
 		return "", errors.Wrap(err, "failed to lookup leadership")
 	}
 
@@ -189,7 +198,7 @@ func (lm *leadershipManager) Current() (string, error) {
 	return string(decoded), nil
 }
 
-func (lm *leadershipManager) SessionID() string {
+func (lm *leadershipManager) SessionID(_ Ctx) string {
 	return string(lm.getSessionID())
 }
 
@@ -207,9 +216,12 @@ func (lm *leadershipManager) tryAcquire() (bool, error) {
 		return false, errors.New("cannot acquire leader lock before establishing session")
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	path := fixup("/v1/kv/", lm.key, param("acquire", id))
 	var response bool
-	if err := lm.client.put(path, lm.value(), &response); err != nil {
+	if err := lm.client.put(ctx, path, lm.value(), &response); err != nil {
 		return false, errors.Wrap(err, "failed to acquire leadership")
 	}
 
@@ -231,7 +243,7 @@ func (lm *leadershipManager) maintainLeadership() {
 		switch {
 		case err != nil:
 			gap = 1 * time.Second
-			lm.client.opts.Logger.Printf("encountered error while acquiring leadership, try again in 1 second: %v", err)
+			lm.client.log.Warnf("encountered error while acquiring leadership, try again in 1 second: %v", err)
 			continue
 
 		case !won:
@@ -260,7 +272,7 @@ func (lm *leadershipManager) maintainLeadership() {
 
 			// in the foreground, run the AsLeaderFunc until it returns or ctx is cancelled
 			err := lm.asLeader(ctx)
-			lm.client.opts.Logger.Printf("provided AsLeaderFunc returned with error: %v", err)
+			lm.client.log.Errorf("provided AsLeaderFunc returned with error: %v", err)
 			lm.setIsLeader(false)
 			cancel() // probably why it returned, but we still need to run it in case
 		}
@@ -268,11 +280,18 @@ func (lm *leadershipManager) maintainLeadership() {
 }
 
 func (lm *leadershipManager) IsLeader() bool {
-	isLeader := lm.isLeader.Load().(bool)
+	isLeader, ok := lm.isLeader.Load().(bool)
+	if !ok {
+		return false
+	}
 	return isLeader
 }
 
 func (lm *leadershipManager) setIsLeader(b bool) {
-	lm.client.opts.Logger.Printf("setting leader status to: %v", b)
+	lm.client.log.Tracef("setting leader status to: %v", b)
 	lm.isLeader.Store(b)
+}
+
+func (lm *leadershipManager) String() string {
+	return fmt.Sprintf("[leader(%s):%t]", lm.key, lm.IsLeader())
 }

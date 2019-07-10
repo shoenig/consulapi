@@ -7,34 +7,45 @@ import (
 	mm_atomic "sync/atomic"
 	mm_time "time"
 
-	"github.com/gojuno/minimock"
+	"github.com/gojuno/minimock/v3"
 )
 
 // CatalogMock implements Catalog
 type CatalogMock struct {
 	t minimock.Tester
 
-	funcDatacenters          func() (sa1 []string, err error)
-	afterDatacentersCounter  uint64
-	beforeDatacentersCounter uint64
-	DatacentersMock          mCatalogMockDatacenters
+	funcConnect          func(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error)
+	inspectFuncConnect   func(c1 Ctx, s1 string, s2 ServiceQuery)
+	afterConnectCounter  uint64
+	beforeConnectCounter uint64
+	ConnectMock          mCatalogMockConnect
 
-	funcNode          func(dc string, name string) (n1 NodeInfo, err error)
+	funcDataCenters          func(c1 Ctx) (sa1 []string, err error)
+	inspectFuncDataCenters   func(c1 Ctx)
+	afterDataCentersCounter  uint64
+	beforeDataCentersCounter uint64
+	DataCentersMock          mCatalogMockDataCenters
+
+	funcNode          func(c1 Ctx, s1 string, n1 NodeQuery) (n2 NodeInfo, err error)
+	inspectFuncNode   func(c1 Ctx, s1 string, n1 NodeQuery)
 	afterNodeCounter  uint64
 	beforeNodeCounter uint64
 	NodeMock          mCatalogMockNode
 
-	funcNodes          func(dc string) (na1 []Node, err error)
+	funcNodes          func(c1 Ctx, n1 NodesQuery) (na1 []Node, err error)
+	inspectFuncNodes   func(c1 Ctx, n1 NodesQuery)
 	afterNodesCounter  uint64
 	beforeNodesCounter uint64
 	NodesMock          mCatalogMockNodes
 
-	funcService          func(dc string, service string, tags ...string) (sa1 []Service, err error)
+	funcService          func(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error)
+	inspectFuncService   func(c1 Ctx, s1 string, s2 ServiceQuery)
 	afterServiceCounter  uint64
 	beforeServiceCounter uint64
 	ServiceMock          mCatalogMockService
 
-	funcServices          func(dc string) (m1 map[string][]string, err error)
+	funcServices          func(c1 Ctx, s1 ServicesQuery) (m1 map[string][]string, err error)
+	inspectFuncServices   func(c1 Ctx, s1 ServicesQuery)
 	afterServicesCounter  uint64
 	beforeServicesCounter uint64
 	ServicesMock          mCatalogMockServices
@@ -47,7 +58,11 @@ func NewCatalogMock(t minimock.Tester) *CatalogMock {
 		controller.RegisterMocker(m)
 	}
 
-	m.DatacentersMock = mCatalogMockDatacenters{mock: m}
+	m.ConnectMock = mCatalogMockConnect{mock: m}
+	m.ConnectMock.callArgs = []*CatalogMockConnectParams{}
+
+	m.DataCentersMock = mCatalogMockDataCenters{mock: m}
+	m.DataCentersMock.callArgs = []*CatalogMockDataCentersParams{}
 
 	m.NodeMock = mCatalogMockNode{mock: m}
 	m.NodeMock.callArgs = []*CatalogMockNodeParams{}
@@ -64,132 +79,437 @@ func NewCatalogMock(t minimock.Tester) *CatalogMock {
 	return m
 }
 
-type mCatalogMockDatacenters struct {
+type mCatalogMockConnect struct {
 	mock               *CatalogMock
-	defaultExpectation *CatalogMockDatacentersExpectation
-	expectations       []*CatalogMockDatacentersExpectation
+	defaultExpectation *CatalogMockConnectExpectation
+	expectations       []*CatalogMockConnectExpectation
+
+	callArgs []*CatalogMockConnectParams
+	mutex    sync.RWMutex
 }
 
-// CatalogMockDatacentersExpectation specifies expectation struct of the Catalog.Datacenters
-type CatalogMockDatacentersExpectation struct {
-	mock *CatalogMock
-
-	results *CatalogMockDatacentersResults
+// CatalogMockConnectExpectation specifies expectation struct of the Catalog.Connect
+type CatalogMockConnectExpectation struct {
+	mock    *CatalogMock
+	params  *CatalogMockConnectParams
+	results *CatalogMockConnectResults
 	Counter uint64
 }
 
-// CatalogMockDatacentersResults contains results of the Catalog.Datacenters
-type CatalogMockDatacentersResults struct {
-	sa1 []string
+// CatalogMockConnectParams contains parameters of the Catalog.Connect
+type CatalogMockConnectParams struct {
+	c1 Ctx
+	s1 string
+	s2 ServiceQuery
+}
+
+// CatalogMockConnectResults contains results of the Catalog.Connect
+type CatalogMockConnectResults struct {
+	ia1 []Instance
 	err error
 }
 
-// Expect sets up expected params for Catalog.Datacenters
-func (mmDatacenters *mCatalogMockDatacenters) Expect() *mCatalogMockDatacenters {
-	if mmDatacenters.mock.funcDatacenters != nil {
-		mmDatacenters.mock.t.Fatalf("CatalogMock.Datacenters mock is already set by Set")
+// Expect sets up expected params for Catalog.Connect
+func (mmConnect *mCatalogMockConnect) Expect(c1 Ctx, s1 string, s2 ServiceQuery) *mCatalogMockConnect {
+	if mmConnect.mock.funcConnect != nil {
+		mmConnect.mock.t.Fatalf("CatalogMock.Connect mock is already set by Set")
 	}
 
-	if mmDatacenters.defaultExpectation == nil {
-		mmDatacenters.defaultExpectation = &CatalogMockDatacentersExpectation{}
+	if mmConnect.defaultExpectation == nil {
+		mmConnect.defaultExpectation = &CatalogMockConnectExpectation{}
 	}
 
-	return mmDatacenters
-}
-
-// Return sets up results that will be returned by Catalog.Datacenters
-func (mmDatacenters *mCatalogMockDatacenters) Return(sa1 []string, err error) *CatalogMock {
-	if mmDatacenters.mock.funcDatacenters != nil {
-		mmDatacenters.mock.t.Fatalf("CatalogMock.Datacenters mock is already set by Set")
-	}
-
-	if mmDatacenters.defaultExpectation == nil {
-		mmDatacenters.defaultExpectation = &CatalogMockDatacentersExpectation{mock: mmDatacenters.mock}
-	}
-	mmDatacenters.defaultExpectation.results = &CatalogMockDatacentersResults{sa1, err}
-	return mmDatacenters.mock
-}
-
-//Set uses given function f to mock the Catalog.Datacenters method
-func (mmDatacenters *mCatalogMockDatacenters) Set(f func() (sa1 []string, err error)) *CatalogMock {
-	if mmDatacenters.defaultExpectation != nil {
-		mmDatacenters.mock.t.Fatalf("Default expectation is already set for the Catalog.Datacenters method")
-	}
-
-	if len(mmDatacenters.expectations) > 0 {
-		mmDatacenters.mock.t.Fatalf("Some expectations are already set for the Catalog.Datacenters method")
-	}
-
-	mmDatacenters.mock.funcDatacenters = f
-	return mmDatacenters.mock
-}
-
-// Datacenters implements Catalog
-func (mmDatacenters *CatalogMock) Datacenters() (sa1 []string, err error) {
-	mm_atomic.AddUint64(&mmDatacenters.beforeDatacentersCounter, 1)
-	defer mm_atomic.AddUint64(&mmDatacenters.afterDatacentersCounter, 1)
-
-	if mmDatacenters.DatacentersMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&mmDatacenters.DatacentersMock.defaultExpectation.Counter, 1)
-
-		results := mmDatacenters.DatacentersMock.defaultExpectation.results
-		if results == nil {
-			mmDatacenters.t.Fatal("No results are set for the CatalogMock.Datacenters")
+	mmConnect.defaultExpectation.params = &CatalogMockConnectParams{c1, s1, s2}
+	for _, e := range mmConnect.expectations {
+		if minimock.Equal(e.params, mmConnect.defaultExpectation.params) {
+			mmConnect.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmConnect.defaultExpectation.params)
 		}
-		return (*results).sa1, (*results).err
 	}
-	if mmDatacenters.funcDatacenters != nil {
-		return mmDatacenters.funcDatacenters()
+
+	return mmConnect
+}
+
+// Inspect accepts an inspector function that has same arguments as the Catalog.Connect
+func (mmConnect *mCatalogMockConnect) Inspect(f func(c1 Ctx, s1 string, s2 ServiceQuery)) *mCatalogMockConnect {
+	if mmConnect.mock.inspectFuncConnect != nil {
+		mmConnect.mock.t.Fatalf("Inspect function is already set for CatalogMock.Connect")
 	}
-	mmDatacenters.t.Fatalf("Unexpected call to CatalogMock.Datacenters.")
+
+	mmConnect.mock.inspectFuncConnect = f
+
+	return mmConnect
+}
+
+// Return sets up results that will be returned by Catalog.Connect
+func (mmConnect *mCatalogMockConnect) Return(ia1 []Instance, err error) *CatalogMock {
+	if mmConnect.mock.funcConnect != nil {
+		mmConnect.mock.t.Fatalf("CatalogMock.Connect mock is already set by Set")
+	}
+
+	if mmConnect.defaultExpectation == nil {
+		mmConnect.defaultExpectation = &CatalogMockConnectExpectation{mock: mmConnect.mock}
+	}
+	mmConnect.defaultExpectation.results = &CatalogMockConnectResults{ia1, err}
+	return mmConnect.mock
+}
+
+//Set uses given function f to mock the Catalog.Connect method
+func (mmConnect *mCatalogMockConnect) Set(f func(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error)) *CatalogMock {
+	if mmConnect.defaultExpectation != nil {
+		mmConnect.mock.t.Fatalf("Default expectation is already set for the Catalog.Connect method")
+	}
+
+	if len(mmConnect.expectations) > 0 {
+		mmConnect.mock.t.Fatalf("Some expectations are already set for the Catalog.Connect method")
+	}
+
+	mmConnect.mock.funcConnect = f
+	return mmConnect.mock
+}
+
+// When sets expectation for the Catalog.Connect which will trigger the result defined by the following
+// Then helper
+func (mmConnect *mCatalogMockConnect) When(c1 Ctx, s1 string, s2 ServiceQuery) *CatalogMockConnectExpectation {
+	if mmConnect.mock.funcConnect != nil {
+		mmConnect.mock.t.Fatalf("CatalogMock.Connect mock is already set by Set")
+	}
+
+	expectation := &CatalogMockConnectExpectation{
+		mock:   mmConnect.mock,
+		params: &CatalogMockConnectParams{c1, s1, s2},
+	}
+	mmConnect.expectations = append(mmConnect.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Catalog.Connect return parameters for the expectation previously defined by the When method
+func (e *CatalogMockConnectExpectation) Then(ia1 []Instance, err error) *CatalogMock {
+	e.results = &CatalogMockConnectResults{ia1, err}
+	return e.mock
+}
+
+// Connect implements Catalog
+func (mmConnect *CatalogMock) Connect(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error) {
+	mm_atomic.AddUint64(&mmConnect.beforeConnectCounter, 1)
+	defer mm_atomic.AddUint64(&mmConnect.afterConnectCounter, 1)
+
+	if mmConnect.inspectFuncConnect != nil {
+		mmConnect.inspectFuncConnect(c1, s1, s2)
+	}
+
+	mm_params := &CatalogMockConnectParams{c1, s1, s2}
+
+	// Record call args
+	mmConnect.ConnectMock.mutex.Lock()
+	mmConnect.ConnectMock.callArgs = append(mmConnect.ConnectMock.callArgs, mm_params)
+	mmConnect.ConnectMock.mutex.Unlock()
+
+	for _, e := range mmConnect.ConnectMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.ia1, e.results.err
+		}
+	}
+
+	if mmConnect.ConnectMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmConnect.ConnectMock.defaultExpectation.Counter, 1)
+		mm_want := mmConnect.ConnectMock.defaultExpectation.params
+		mm_got := CatalogMockConnectParams{c1, s1, s2}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmConnect.t.Errorf("CatalogMock.Connect got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmConnect.ConnectMock.defaultExpectation.results
+		if mm_results == nil {
+			mmConnect.t.Fatal("No results are set for the CatalogMock.Connect")
+		}
+		return (*mm_results).ia1, (*mm_results).err
+	}
+	if mmConnect.funcConnect != nil {
+		return mmConnect.funcConnect(c1, s1, s2)
+	}
+	mmConnect.t.Fatalf("Unexpected call to CatalogMock.Connect. %v %v %v", c1, s1, s2)
 	return
 }
 
-// DatacentersAfterCounter returns a count of finished CatalogMock.Datacenters invocations
-func (mmDatacenters *CatalogMock) DatacentersAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmDatacenters.afterDatacentersCounter)
+// ConnectAfterCounter returns a count of finished CatalogMock.Connect invocations
+func (mmConnect *CatalogMock) ConnectAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmConnect.afterConnectCounter)
 }
 
-// DatacentersBeforeCounter returns a count of CatalogMock.Datacenters invocations
-func (mmDatacenters *CatalogMock) DatacentersBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmDatacenters.beforeDatacentersCounter)
+// ConnectBeforeCounter returns a count of CatalogMock.Connect invocations
+func (mmConnect *CatalogMock) ConnectBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmConnect.beforeConnectCounter)
 }
 
-// MinimockDatacentersDone returns true if the count of the Datacenters invocations corresponds
+// Calls returns a list of arguments used in each call to CatalogMock.Connect.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmConnect *mCatalogMockConnect) Calls() []*CatalogMockConnectParams {
+	mmConnect.mutex.RLock()
+
+	argCopy := make([]*CatalogMockConnectParams, len(mmConnect.callArgs))
+	copy(argCopy, mmConnect.callArgs)
+
+	mmConnect.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockConnectDone returns true if the count of the Connect invocations corresponds
 // the number of defined expectations
-func (m *CatalogMock) MinimockDatacentersDone() bool {
-	for _, e := range m.DatacentersMock.expectations {
+func (m *CatalogMock) MinimockConnectDone() bool {
+	for _, e := range m.ConnectMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
 		}
 	}
 
 	// if default expectation was set then invocations count should be greater than zero
-	if m.DatacentersMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDatacentersCounter) < 1 {
+	if m.ConnectMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
 		return false
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcDatacenters != nil && mm_atomic.LoadUint64(&m.afterDatacentersCounter) < 1 {
+	if m.funcConnect != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
 		return false
 	}
 	return true
 }
 
-// MinimockDatacentersInspect logs each unmet expectation
-func (m *CatalogMock) MinimockDatacentersInspect() {
-	for _, e := range m.DatacentersMock.expectations {
+// MinimockConnectInspect logs each unmet expectation
+func (m *CatalogMock) MinimockConnectInspect() {
+	for _, e := range m.ConnectMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Error("Expected call to CatalogMock.Datacenters")
+			m.t.Errorf("Expected call to CatalogMock.Connect with params: %#v", *e.params)
 		}
 	}
 
 	// if default expectation was set then invocations count should be greater than zero
-	if m.DatacentersMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDatacentersCounter) < 1 {
-		m.t.Error("Expected call to CatalogMock.Datacenters")
+	if m.ConnectMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
+		if m.ConnectMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to CatalogMock.Connect")
+		} else {
+			m.t.Errorf("Expected call to CatalogMock.Connect with params: %#v", *m.ConnectMock.defaultExpectation.params)
+		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcDatacenters != nil && mm_atomic.LoadUint64(&m.afterDatacentersCounter) < 1 {
-		m.t.Error("Expected call to CatalogMock.Datacenters")
+	if m.funcConnect != nil && mm_atomic.LoadUint64(&m.afterConnectCounter) < 1 {
+		m.t.Error("Expected call to CatalogMock.Connect")
+	}
+}
+
+type mCatalogMockDataCenters struct {
+	mock               *CatalogMock
+	defaultExpectation *CatalogMockDataCentersExpectation
+	expectations       []*CatalogMockDataCentersExpectation
+
+	callArgs []*CatalogMockDataCentersParams
+	mutex    sync.RWMutex
+}
+
+// CatalogMockDataCentersExpectation specifies expectation struct of the Catalog.DataCenters
+type CatalogMockDataCentersExpectation struct {
+	mock    *CatalogMock
+	params  *CatalogMockDataCentersParams
+	results *CatalogMockDataCentersResults
+	Counter uint64
+}
+
+// CatalogMockDataCentersParams contains parameters of the Catalog.DataCenters
+type CatalogMockDataCentersParams struct {
+	c1 Ctx
+}
+
+// CatalogMockDataCentersResults contains results of the Catalog.DataCenters
+type CatalogMockDataCentersResults struct {
+	sa1 []string
+	err error
+}
+
+// Expect sets up expected params for Catalog.DataCenters
+func (mmDataCenters *mCatalogMockDataCenters) Expect(c1 Ctx) *mCatalogMockDataCenters {
+	if mmDataCenters.mock.funcDataCenters != nil {
+		mmDataCenters.mock.t.Fatalf("CatalogMock.DataCenters mock is already set by Set")
+	}
+
+	if mmDataCenters.defaultExpectation == nil {
+		mmDataCenters.defaultExpectation = &CatalogMockDataCentersExpectation{}
+	}
+
+	mmDataCenters.defaultExpectation.params = &CatalogMockDataCentersParams{c1}
+	for _, e := range mmDataCenters.expectations {
+		if minimock.Equal(e.params, mmDataCenters.defaultExpectation.params) {
+			mmDataCenters.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmDataCenters.defaultExpectation.params)
+		}
+	}
+
+	return mmDataCenters
+}
+
+// Inspect accepts an inspector function that has same arguments as the Catalog.DataCenters
+func (mmDataCenters *mCatalogMockDataCenters) Inspect(f func(c1 Ctx)) *mCatalogMockDataCenters {
+	if mmDataCenters.mock.inspectFuncDataCenters != nil {
+		mmDataCenters.mock.t.Fatalf("Inspect function is already set for CatalogMock.DataCenters")
+	}
+
+	mmDataCenters.mock.inspectFuncDataCenters = f
+
+	return mmDataCenters
+}
+
+// Return sets up results that will be returned by Catalog.DataCenters
+func (mmDataCenters *mCatalogMockDataCenters) Return(sa1 []string, err error) *CatalogMock {
+	if mmDataCenters.mock.funcDataCenters != nil {
+		mmDataCenters.mock.t.Fatalf("CatalogMock.DataCenters mock is already set by Set")
+	}
+
+	if mmDataCenters.defaultExpectation == nil {
+		mmDataCenters.defaultExpectation = &CatalogMockDataCentersExpectation{mock: mmDataCenters.mock}
+	}
+	mmDataCenters.defaultExpectation.results = &CatalogMockDataCentersResults{sa1, err}
+	return mmDataCenters.mock
+}
+
+//Set uses given function f to mock the Catalog.DataCenters method
+func (mmDataCenters *mCatalogMockDataCenters) Set(f func(c1 Ctx) (sa1 []string, err error)) *CatalogMock {
+	if mmDataCenters.defaultExpectation != nil {
+		mmDataCenters.mock.t.Fatalf("Default expectation is already set for the Catalog.DataCenters method")
+	}
+
+	if len(mmDataCenters.expectations) > 0 {
+		mmDataCenters.mock.t.Fatalf("Some expectations are already set for the Catalog.DataCenters method")
+	}
+
+	mmDataCenters.mock.funcDataCenters = f
+	return mmDataCenters.mock
+}
+
+// When sets expectation for the Catalog.DataCenters which will trigger the result defined by the following
+// Then helper
+func (mmDataCenters *mCatalogMockDataCenters) When(c1 Ctx) *CatalogMockDataCentersExpectation {
+	if mmDataCenters.mock.funcDataCenters != nil {
+		mmDataCenters.mock.t.Fatalf("CatalogMock.DataCenters mock is already set by Set")
+	}
+
+	expectation := &CatalogMockDataCentersExpectation{
+		mock:   mmDataCenters.mock,
+		params: &CatalogMockDataCentersParams{c1},
+	}
+	mmDataCenters.expectations = append(mmDataCenters.expectations, expectation)
+	return expectation
+}
+
+// Then sets up Catalog.DataCenters return parameters for the expectation previously defined by the When method
+func (e *CatalogMockDataCentersExpectation) Then(sa1 []string, err error) *CatalogMock {
+	e.results = &CatalogMockDataCentersResults{sa1, err}
+	return e.mock
+}
+
+// DataCenters implements Catalog
+func (mmDataCenters *CatalogMock) DataCenters(c1 Ctx) (sa1 []string, err error) {
+	mm_atomic.AddUint64(&mmDataCenters.beforeDataCentersCounter, 1)
+	defer mm_atomic.AddUint64(&mmDataCenters.afterDataCentersCounter, 1)
+
+	if mmDataCenters.inspectFuncDataCenters != nil {
+		mmDataCenters.inspectFuncDataCenters(c1)
+	}
+
+	mm_params := &CatalogMockDataCentersParams{c1}
+
+	// Record call args
+	mmDataCenters.DataCentersMock.mutex.Lock()
+	mmDataCenters.DataCentersMock.callArgs = append(mmDataCenters.DataCentersMock.callArgs, mm_params)
+	mmDataCenters.DataCentersMock.mutex.Unlock()
+
+	for _, e := range mmDataCenters.DataCentersMock.expectations {
+		if minimock.Equal(e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return e.results.sa1, e.results.err
+		}
+	}
+
+	if mmDataCenters.DataCentersMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmDataCenters.DataCentersMock.defaultExpectation.Counter, 1)
+		mm_want := mmDataCenters.DataCentersMock.defaultExpectation.params
+		mm_got := CatalogMockDataCentersParams{c1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmDataCenters.t.Errorf("CatalogMock.DataCenters got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		mm_results := mmDataCenters.DataCentersMock.defaultExpectation.results
+		if mm_results == nil {
+			mmDataCenters.t.Fatal("No results are set for the CatalogMock.DataCenters")
+		}
+		return (*mm_results).sa1, (*mm_results).err
+	}
+	if mmDataCenters.funcDataCenters != nil {
+		return mmDataCenters.funcDataCenters(c1)
+	}
+	mmDataCenters.t.Fatalf("Unexpected call to CatalogMock.DataCenters. %v", c1)
+	return
+}
+
+// DataCentersAfterCounter returns a count of finished CatalogMock.DataCenters invocations
+func (mmDataCenters *CatalogMock) DataCentersAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmDataCenters.afterDataCentersCounter)
+}
+
+// DataCentersBeforeCounter returns a count of CatalogMock.DataCenters invocations
+func (mmDataCenters *CatalogMock) DataCentersBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmDataCenters.beforeDataCentersCounter)
+}
+
+// Calls returns a list of arguments used in each call to CatalogMock.DataCenters.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmDataCenters *mCatalogMockDataCenters) Calls() []*CatalogMockDataCentersParams {
+	mmDataCenters.mutex.RLock()
+
+	argCopy := make([]*CatalogMockDataCentersParams, len(mmDataCenters.callArgs))
+	copy(argCopy, mmDataCenters.callArgs)
+
+	mmDataCenters.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockDataCentersDone returns true if the count of the DataCenters invocations corresponds
+// the number of defined expectations
+func (m *CatalogMock) MinimockDataCentersDone() bool {
+	for _, e := range m.DataCentersMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.DataCentersMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDataCentersCounter) < 1 {
+		return false
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcDataCenters != nil && mm_atomic.LoadUint64(&m.afterDataCentersCounter) < 1 {
+		return false
+	}
+	return true
+}
+
+// MinimockDataCentersInspect logs each unmet expectation
+func (m *CatalogMock) MinimockDataCentersInspect() {
+	for _, e := range m.DataCentersMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to CatalogMock.DataCenters with params: %#v", *e.params)
+		}
+	}
+
+	// if default expectation was set then invocations count should be greater than zero
+	if m.DataCentersMock.defaultExpectation != nil && mm_atomic.LoadUint64(&m.afterDataCentersCounter) < 1 {
+		if m.DataCentersMock.defaultExpectation.params == nil {
+			m.t.Error("Expected call to CatalogMock.DataCenters")
+		} else {
+			m.t.Errorf("Expected call to CatalogMock.DataCenters with params: %#v", *m.DataCentersMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcDataCenters != nil && mm_atomic.LoadUint64(&m.afterDataCentersCounter) < 1 {
+		m.t.Error("Expected call to CatalogMock.DataCenters")
 	}
 }
 
@@ -212,18 +532,19 @@ type CatalogMockNodeExpectation struct {
 
 // CatalogMockNodeParams contains parameters of the Catalog.Node
 type CatalogMockNodeParams struct {
-	dc   string
-	name string
+	c1 Ctx
+	s1 string
+	n1 NodeQuery
 }
 
 // CatalogMockNodeResults contains results of the Catalog.Node
 type CatalogMockNodeResults struct {
-	n1  NodeInfo
+	n2  NodeInfo
 	err error
 }
 
 // Expect sets up expected params for Catalog.Node
-func (mmNode *mCatalogMockNode) Expect(dc string, name string) *mCatalogMockNode {
+func (mmNode *mCatalogMockNode) Expect(c1 Ctx, s1 string, n1 NodeQuery) *mCatalogMockNode {
 	if mmNode.mock.funcNode != nil {
 		mmNode.mock.t.Fatalf("CatalogMock.Node mock is already set by Set")
 	}
@@ -232,7 +553,7 @@ func (mmNode *mCatalogMockNode) Expect(dc string, name string) *mCatalogMockNode
 		mmNode.defaultExpectation = &CatalogMockNodeExpectation{}
 	}
 
-	mmNode.defaultExpectation.params = &CatalogMockNodeParams{dc, name}
+	mmNode.defaultExpectation.params = &CatalogMockNodeParams{c1, s1, n1}
 	for _, e := range mmNode.expectations {
 		if minimock.Equal(e.params, mmNode.defaultExpectation.params) {
 			mmNode.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmNode.defaultExpectation.params)
@@ -242,8 +563,19 @@ func (mmNode *mCatalogMockNode) Expect(dc string, name string) *mCatalogMockNode
 	return mmNode
 }
 
+// Inspect accepts an inspector function that has same arguments as the Catalog.Node
+func (mmNode *mCatalogMockNode) Inspect(f func(c1 Ctx, s1 string, n1 NodeQuery)) *mCatalogMockNode {
+	if mmNode.mock.inspectFuncNode != nil {
+		mmNode.mock.t.Fatalf("Inspect function is already set for CatalogMock.Node")
+	}
+
+	mmNode.mock.inspectFuncNode = f
+
+	return mmNode
+}
+
 // Return sets up results that will be returned by Catalog.Node
-func (mmNode *mCatalogMockNode) Return(n1 NodeInfo, err error) *CatalogMock {
+func (mmNode *mCatalogMockNode) Return(n2 NodeInfo, err error) *CatalogMock {
 	if mmNode.mock.funcNode != nil {
 		mmNode.mock.t.Fatalf("CatalogMock.Node mock is already set by Set")
 	}
@@ -251,12 +583,12 @@ func (mmNode *mCatalogMockNode) Return(n1 NodeInfo, err error) *CatalogMock {
 	if mmNode.defaultExpectation == nil {
 		mmNode.defaultExpectation = &CatalogMockNodeExpectation{mock: mmNode.mock}
 	}
-	mmNode.defaultExpectation.results = &CatalogMockNodeResults{n1, err}
+	mmNode.defaultExpectation.results = &CatalogMockNodeResults{n2, err}
 	return mmNode.mock
 }
 
 //Set uses given function f to mock the Catalog.Node method
-func (mmNode *mCatalogMockNode) Set(f func(dc string, name string) (n1 NodeInfo, err error)) *CatalogMock {
+func (mmNode *mCatalogMockNode) Set(f func(c1 Ctx, s1 string, n1 NodeQuery) (n2 NodeInfo, err error)) *CatalogMock {
 	if mmNode.defaultExpectation != nil {
 		mmNode.mock.t.Fatalf("Default expectation is already set for the Catalog.Node method")
 	}
@@ -271,62 +603,66 @@ func (mmNode *mCatalogMockNode) Set(f func(dc string, name string) (n1 NodeInfo,
 
 // When sets expectation for the Catalog.Node which will trigger the result defined by the following
 // Then helper
-func (mmNode *mCatalogMockNode) When(dc string, name string) *CatalogMockNodeExpectation {
+func (mmNode *mCatalogMockNode) When(c1 Ctx, s1 string, n1 NodeQuery) *CatalogMockNodeExpectation {
 	if mmNode.mock.funcNode != nil {
 		mmNode.mock.t.Fatalf("CatalogMock.Node mock is already set by Set")
 	}
 
 	expectation := &CatalogMockNodeExpectation{
 		mock:   mmNode.mock,
-		params: &CatalogMockNodeParams{dc, name},
+		params: &CatalogMockNodeParams{c1, s1, n1},
 	}
 	mmNode.expectations = append(mmNode.expectations, expectation)
 	return expectation
 }
 
 // Then sets up Catalog.Node return parameters for the expectation previously defined by the When method
-func (e *CatalogMockNodeExpectation) Then(n1 NodeInfo, err error) *CatalogMock {
-	e.results = &CatalogMockNodeResults{n1, err}
+func (e *CatalogMockNodeExpectation) Then(n2 NodeInfo, err error) *CatalogMock {
+	e.results = &CatalogMockNodeResults{n2, err}
 	return e.mock
 }
 
 // Node implements Catalog
-func (mmNode *CatalogMock) Node(dc string, name string) (n1 NodeInfo, err error) {
+func (mmNode *CatalogMock) Node(c1 Ctx, s1 string, n1 NodeQuery) (n2 NodeInfo, err error) {
 	mm_atomic.AddUint64(&mmNode.beforeNodeCounter, 1)
 	defer mm_atomic.AddUint64(&mmNode.afterNodeCounter, 1)
 
-	params := &CatalogMockNodeParams{dc, name}
+	if mmNode.inspectFuncNode != nil {
+		mmNode.inspectFuncNode(c1, s1, n1)
+	}
+
+	mm_params := &CatalogMockNodeParams{c1, s1, n1}
 
 	// Record call args
 	mmNode.NodeMock.mutex.Lock()
-	mmNode.NodeMock.callArgs = append(mmNode.NodeMock.callArgs, params)
+	mmNode.NodeMock.callArgs = append(mmNode.NodeMock.callArgs, mm_params)
 	mmNode.NodeMock.mutex.Unlock()
 
 	for _, e := range mmNode.NodeMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.n1, e.results.err
+			return e.results.n2, e.results.err
 		}
 	}
 
 	if mmNode.NodeMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmNode.NodeMock.defaultExpectation.Counter, 1)
-		want := mmNode.NodeMock.defaultExpectation.params
-		got := CatalogMockNodeParams{dc, name}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmNode.t.Errorf("CatalogMock.Node got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmNode.NodeMock.defaultExpectation.params
+		mm_got := CatalogMockNodeParams{c1, s1, n1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmNode.t.Errorf("CatalogMock.Node got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmNode.NodeMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmNode.NodeMock.defaultExpectation.results
+		if mm_results == nil {
 			mmNode.t.Fatal("No results are set for the CatalogMock.Node")
 		}
-		return (*results).n1, (*results).err
+		return (*mm_results).n2, (*mm_results).err
 	}
 	if mmNode.funcNode != nil {
-		return mmNode.funcNode(dc, name)
+		return mmNode.funcNode(c1, s1, n1)
 	}
-	mmNode.t.Fatalf("Unexpected call to CatalogMock.Node. %v %v", dc, name)
+	mmNode.t.Fatalf("Unexpected call to CatalogMock.Node. %v %v %v", c1, s1, n1)
 	return
 }
 
@@ -414,7 +750,8 @@ type CatalogMockNodesExpectation struct {
 
 // CatalogMockNodesParams contains parameters of the Catalog.Nodes
 type CatalogMockNodesParams struct {
-	dc string
+	c1 Ctx
+	n1 NodesQuery
 }
 
 // CatalogMockNodesResults contains results of the Catalog.Nodes
@@ -424,7 +761,7 @@ type CatalogMockNodesResults struct {
 }
 
 // Expect sets up expected params for Catalog.Nodes
-func (mmNodes *mCatalogMockNodes) Expect(dc string) *mCatalogMockNodes {
+func (mmNodes *mCatalogMockNodes) Expect(c1 Ctx, n1 NodesQuery) *mCatalogMockNodes {
 	if mmNodes.mock.funcNodes != nil {
 		mmNodes.mock.t.Fatalf("CatalogMock.Nodes mock is already set by Set")
 	}
@@ -433,12 +770,23 @@ func (mmNodes *mCatalogMockNodes) Expect(dc string) *mCatalogMockNodes {
 		mmNodes.defaultExpectation = &CatalogMockNodesExpectation{}
 	}
 
-	mmNodes.defaultExpectation.params = &CatalogMockNodesParams{dc}
+	mmNodes.defaultExpectation.params = &CatalogMockNodesParams{c1, n1}
 	for _, e := range mmNodes.expectations {
 		if minimock.Equal(e.params, mmNodes.defaultExpectation.params) {
 			mmNodes.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmNodes.defaultExpectation.params)
 		}
 	}
+
+	return mmNodes
+}
+
+// Inspect accepts an inspector function that has same arguments as the Catalog.Nodes
+func (mmNodes *mCatalogMockNodes) Inspect(f func(c1 Ctx, n1 NodesQuery)) *mCatalogMockNodes {
+	if mmNodes.mock.inspectFuncNodes != nil {
+		mmNodes.mock.t.Fatalf("Inspect function is already set for CatalogMock.Nodes")
+	}
+
+	mmNodes.mock.inspectFuncNodes = f
 
 	return mmNodes
 }
@@ -457,7 +805,7 @@ func (mmNodes *mCatalogMockNodes) Return(na1 []Node, err error) *CatalogMock {
 }
 
 //Set uses given function f to mock the Catalog.Nodes method
-func (mmNodes *mCatalogMockNodes) Set(f func(dc string) (na1 []Node, err error)) *CatalogMock {
+func (mmNodes *mCatalogMockNodes) Set(f func(c1 Ctx, n1 NodesQuery) (na1 []Node, err error)) *CatalogMock {
 	if mmNodes.defaultExpectation != nil {
 		mmNodes.mock.t.Fatalf("Default expectation is already set for the Catalog.Nodes method")
 	}
@@ -472,14 +820,14 @@ func (mmNodes *mCatalogMockNodes) Set(f func(dc string) (na1 []Node, err error))
 
 // When sets expectation for the Catalog.Nodes which will trigger the result defined by the following
 // Then helper
-func (mmNodes *mCatalogMockNodes) When(dc string) *CatalogMockNodesExpectation {
+func (mmNodes *mCatalogMockNodes) When(c1 Ctx, n1 NodesQuery) *CatalogMockNodesExpectation {
 	if mmNodes.mock.funcNodes != nil {
 		mmNodes.mock.t.Fatalf("CatalogMock.Nodes mock is already set by Set")
 	}
 
 	expectation := &CatalogMockNodesExpectation{
 		mock:   mmNodes.mock,
-		params: &CatalogMockNodesParams{dc},
+		params: &CatalogMockNodesParams{c1, n1},
 	}
 	mmNodes.expectations = append(mmNodes.expectations, expectation)
 	return expectation
@@ -492,19 +840,23 @@ func (e *CatalogMockNodesExpectation) Then(na1 []Node, err error) *CatalogMock {
 }
 
 // Nodes implements Catalog
-func (mmNodes *CatalogMock) Nodes(dc string) (na1 []Node, err error) {
+func (mmNodes *CatalogMock) Nodes(c1 Ctx, n1 NodesQuery) (na1 []Node, err error) {
 	mm_atomic.AddUint64(&mmNodes.beforeNodesCounter, 1)
 	defer mm_atomic.AddUint64(&mmNodes.afterNodesCounter, 1)
 
-	params := &CatalogMockNodesParams{dc}
+	if mmNodes.inspectFuncNodes != nil {
+		mmNodes.inspectFuncNodes(c1, n1)
+	}
+
+	mm_params := &CatalogMockNodesParams{c1, n1}
 
 	// Record call args
 	mmNodes.NodesMock.mutex.Lock()
-	mmNodes.NodesMock.callArgs = append(mmNodes.NodesMock.callArgs, params)
+	mmNodes.NodesMock.callArgs = append(mmNodes.NodesMock.callArgs, mm_params)
 	mmNodes.NodesMock.mutex.Unlock()
 
 	for _, e := range mmNodes.NodesMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.na1, e.results.err
 		}
@@ -512,22 +864,22 @@ func (mmNodes *CatalogMock) Nodes(dc string) (na1 []Node, err error) {
 
 	if mmNodes.NodesMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmNodes.NodesMock.defaultExpectation.Counter, 1)
-		want := mmNodes.NodesMock.defaultExpectation.params
-		got := CatalogMockNodesParams{dc}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmNodes.t.Errorf("CatalogMock.Nodes got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmNodes.NodesMock.defaultExpectation.params
+		mm_got := CatalogMockNodesParams{c1, n1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmNodes.t.Errorf("CatalogMock.Nodes got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmNodes.NodesMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmNodes.NodesMock.defaultExpectation.results
+		if mm_results == nil {
 			mmNodes.t.Fatal("No results are set for the CatalogMock.Nodes")
 		}
-		return (*results).na1, (*results).err
+		return (*mm_results).na1, (*mm_results).err
 	}
 	if mmNodes.funcNodes != nil {
-		return mmNodes.funcNodes(dc)
+		return mmNodes.funcNodes(c1, n1)
 	}
-	mmNodes.t.Fatalf("Unexpected call to CatalogMock.Nodes. %v", dc)
+	mmNodes.t.Fatalf("Unexpected call to CatalogMock.Nodes. %v %v", c1, n1)
 	return
 }
 
@@ -615,19 +967,19 @@ type CatalogMockServiceExpectation struct {
 
 // CatalogMockServiceParams contains parameters of the Catalog.Service
 type CatalogMockServiceParams struct {
-	dc      string
-	service string
-	tags    []string
+	c1 Ctx
+	s1 string
+	s2 ServiceQuery
 }
 
 // CatalogMockServiceResults contains results of the Catalog.Service
 type CatalogMockServiceResults struct {
-	sa1 []Service
+	ia1 []Instance
 	err error
 }
 
 // Expect sets up expected params for Catalog.Service
-func (mmService *mCatalogMockService) Expect(dc string, service string, tags ...string) *mCatalogMockService {
+func (mmService *mCatalogMockService) Expect(c1 Ctx, s1 string, s2 ServiceQuery) *mCatalogMockService {
 	if mmService.mock.funcService != nil {
 		mmService.mock.t.Fatalf("CatalogMock.Service mock is already set by Set")
 	}
@@ -636,7 +988,7 @@ func (mmService *mCatalogMockService) Expect(dc string, service string, tags ...
 		mmService.defaultExpectation = &CatalogMockServiceExpectation{}
 	}
 
-	mmService.defaultExpectation.params = &CatalogMockServiceParams{dc, service, tags}
+	mmService.defaultExpectation.params = &CatalogMockServiceParams{c1, s1, s2}
 	for _, e := range mmService.expectations {
 		if minimock.Equal(e.params, mmService.defaultExpectation.params) {
 			mmService.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmService.defaultExpectation.params)
@@ -646,8 +998,19 @@ func (mmService *mCatalogMockService) Expect(dc string, service string, tags ...
 	return mmService
 }
 
+// Inspect accepts an inspector function that has same arguments as the Catalog.Service
+func (mmService *mCatalogMockService) Inspect(f func(c1 Ctx, s1 string, s2 ServiceQuery)) *mCatalogMockService {
+	if mmService.mock.inspectFuncService != nil {
+		mmService.mock.t.Fatalf("Inspect function is already set for CatalogMock.Service")
+	}
+
+	mmService.mock.inspectFuncService = f
+
+	return mmService
+}
+
 // Return sets up results that will be returned by Catalog.Service
-func (mmService *mCatalogMockService) Return(sa1 []Service, err error) *CatalogMock {
+func (mmService *mCatalogMockService) Return(ia1 []Instance, err error) *CatalogMock {
 	if mmService.mock.funcService != nil {
 		mmService.mock.t.Fatalf("CatalogMock.Service mock is already set by Set")
 	}
@@ -655,12 +1018,12 @@ func (mmService *mCatalogMockService) Return(sa1 []Service, err error) *CatalogM
 	if mmService.defaultExpectation == nil {
 		mmService.defaultExpectation = &CatalogMockServiceExpectation{mock: mmService.mock}
 	}
-	mmService.defaultExpectation.results = &CatalogMockServiceResults{sa1, err}
+	mmService.defaultExpectation.results = &CatalogMockServiceResults{ia1, err}
 	return mmService.mock
 }
 
 //Set uses given function f to mock the Catalog.Service method
-func (mmService *mCatalogMockService) Set(f func(dc string, service string, tags ...string) (sa1 []Service, err error)) *CatalogMock {
+func (mmService *mCatalogMockService) Set(f func(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error)) *CatalogMock {
 	if mmService.defaultExpectation != nil {
 		mmService.mock.t.Fatalf("Default expectation is already set for the Catalog.Service method")
 	}
@@ -675,62 +1038,66 @@ func (mmService *mCatalogMockService) Set(f func(dc string, service string, tags
 
 // When sets expectation for the Catalog.Service which will trigger the result defined by the following
 // Then helper
-func (mmService *mCatalogMockService) When(dc string, service string, tags ...string) *CatalogMockServiceExpectation {
+func (mmService *mCatalogMockService) When(c1 Ctx, s1 string, s2 ServiceQuery) *CatalogMockServiceExpectation {
 	if mmService.mock.funcService != nil {
 		mmService.mock.t.Fatalf("CatalogMock.Service mock is already set by Set")
 	}
 
 	expectation := &CatalogMockServiceExpectation{
 		mock:   mmService.mock,
-		params: &CatalogMockServiceParams{dc, service, tags},
+		params: &CatalogMockServiceParams{c1, s1, s2},
 	}
 	mmService.expectations = append(mmService.expectations, expectation)
 	return expectation
 }
 
 // Then sets up Catalog.Service return parameters for the expectation previously defined by the When method
-func (e *CatalogMockServiceExpectation) Then(sa1 []Service, err error) *CatalogMock {
-	e.results = &CatalogMockServiceResults{sa1, err}
+func (e *CatalogMockServiceExpectation) Then(ia1 []Instance, err error) *CatalogMock {
+	e.results = &CatalogMockServiceResults{ia1, err}
 	return e.mock
 }
 
 // Service implements Catalog
-func (mmService *CatalogMock) Service(dc string, service string, tags ...string) (sa1 []Service, err error) {
+func (mmService *CatalogMock) Service(c1 Ctx, s1 string, s2 ServiceQuery) (ia1 []Instance, err error) {
 	mm_atomic.AddUint64(&mmService.beforeServiceCounter, 1)
 	defer mm_atomic.AddUint64(&mmService.afterServiceCounter, 1)
 
-	params := &CatalogMockServiceParams{dc, service, tags}
+	if mmService.inspectFuncService != nil {
+		mmService.inspectFuncService(c1, s1, s2)
+	}
+
+	mm_params := &CatalogMockServiceParams{c1, s1, s2}
 
 	// Record call args
 	mmService.ServiceMock.mutex.Lock()
-	mmService.ServiceMock.callArgs = append(mmService.ServiceMock.callArgs, params)
+	mmService.ServiceMock.callArgs = append(mmService.ServiceMock.callArgs, mm_params)
 	mmService.ServiceMock.mutex.Unlock()
 
 	for _, e := range mmService.ServiceMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.sa1, e.results.err
+			return e.results.ia1, e.results.err
 		}
 	}
 
 	if mmService.ServiceMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmService.ServiceMock.defaultExpectation.Counter, 1)
-		want := mmService.ServiceMock.defaultExpectation.params
-		got := CatalogMockServiceParams{dc, service, tags}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmService.t.Errorf("CatalogMock.Service got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmService.ServiceMock.defaultExpectation.params
+		mm_got := CatalogMockServiceParams{c1, s1, s2}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmService.t.Errorf("CatalogMock.Service got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmService.ServiceMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmService.ServiceMock.defaultExpectation.results
+		if mm_results == nil {
 			mmService.t.Fatal("No results are set for the CatalogMock.Service")
 		}
-		return (*results).sa1, (*results).err
+		return (*mm_results).ia1, (*mm_results).err
 	}
 	if mmService.funcService != nil {
-		return mmService.funcService(dc, service, tags...)
+		return mmService.funcService(c1, s1, s2)
 	}
-	mmService.t.Fatalf("Unexpected call to CatalogMock.Service. %v %v %v", dc, service, tags)
+	mmService.t.Fatalf("Unexpected call to CatalogMock.Service. %v %v %v", c1, s1, s2)
 	return
 }
 
@@ -818,7 +1185,8 @@ type CatalogMockServicesExpectation struct {
 
 // CatalogMockServicesParams contains parameters of the Catalog.Services
 type CatalogMockServicesParams struct {
-	dc string
+	c1 Ctx
+	s1 ServicesQuery
 }
 
 // CatalogMockServicesResults contains results of the Catalog.Services
@@ -828,7 +1196,7 @@ type CatalogMockServicesResults struct {
 }
 
 // Expect sets up expected params for Catalog.Services
-func (mmServices *mCatalogMockServices) Expect(dc string) *mCatalogMockServices {
+func (mmServices *mCatalogMockServices) Expect(c1 Ctx, s1 ServicesQuery) *mCatalogMockServices {
 	if mmServices.mock.funcServices != nil {
 		mmServices.mock.t.Fatalf("CatalogMock.Services mock is already set by Set")
 	}
@@ -837,12 +1205,23 @@ func (mmServices *mCatalogMockServices) Expect(dc string) *mCatalogMockServices 
 		mmServices.defaultExpectation = &CatalogMockServicesExpectation{}
 	}
 
-	mmServices.defaultExpectation.params = &CatalogMockServicesParams{dc}
+	mmServices.defaultExpectation.params = &CatalogMockServicesParams{c1, s1}
 	for _, e := range mmServices.expectations {
 		if minimock.Equal(e.params, mmServices.defaultExpectation.params) {
 			mmServices.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmServices.defaultExpectation.params)
 		}
 	}
+
+	return mmServices
+}
+
+// Inspect accepts an inspector function that has same arguments as the Catalog.Services
+func (mmServices *mCatalogMockServices) Inspect(f func(c1 Ctx, s1 ServicesQuery)) *mCatalogMockServices {
+	if mmServices.mock.inspectFuncServices != nil {
+		mmServices.mock.t.Fatalf("Inspect function is already set for CatalogMock.Services")
+	}
+
+	mmServices.mock.inspectFuncServices = f
 
 	return mmServices
 }
@@ -861,7 +1240,7 @@ func (mmServices *mCatalogMockServices) Return(m1 map[string][]string, err error
 }
 
 //Set uses given function f to mock the Catalog.Services method
-func (mmServices *mCatalogMockServices) Set(f func(dc string) (m1 map[string][]string, err error)) *CatalogMock {
+func (mmServices *mCatalogMockServices) Set(f func(c1 Ctx, s1 ServicesQuery) (m1 map[string][]string, err error)) *CatalogMock {
 	if mmServices.defaultExpectation != nil {
 		mmServices.mock.t.Fatalf("Default expectation is already set for the Catalog.Services method")
 	}
@@ -876,14 +1255,14 @@ func (mmServices *mCatalogMockServices) Set(f func(dc string) (m1 map[string][]s
 
 // When sets expectation for the Catalog.Services which will trigger the result defined by the following
 // Then helper
-func (mmServices *mCatalogMockServices) When(dc string) *CatalogMockServicesExpectation {
+func (mmServices *mCatalogMockServices) When(c1 Ctx, s1 ServicesQuery) *CatalogMockServicesExpectation {
 	if mmServices.mock.funcServices != nil {
 		mmServices.mock.t.Fatalf("CatalogMock.Services mock is already set by Set")
 	}
 
 	expectation := &CatalogMockServicesExpectation{
 		mock:   mmServices.mock,
-		params: &CatalogMockServicesParams{dc},
+		params: &CatalogMockServicesParams{c1, s1},
 	}
 	mmServices.expectations = append(mmServices.expectations, expectation)
 	return expectation
@@ -896,19 +1275,23 @@ func (e *CatalogMockServicesExpectation) Then(m1 map[string][]string, err error)
 }
 
 // Services implements Catalog
-func (mmServices *CatalogMock) Services(dc string) (m1 map[string][]string, err error) {
+func (mmServices *CatalogMock) Services(c1 Ctx, s1 ServicesQuery) (m1 map[string][]string, err error) {
 	mm_atomic.AddUint64(&mmServices.beforeServicesCounter, 1)
 	defer mm_atomic.AddUint64(&mmServices.afterServicesCounter, 1)
 
-	params := &CatalogMockServicesParams{dc}
+	if mmServices.inspectFuncServices != nil {
+		mmServices.inspectFuncServices(c1, s1)
+	}
+
+	mm_params := &CatalogMockServicesParams{c1, s1}
 
 	// Record call args
 	mmServices.ServicesMock.mutex.Lock()
-	mmServices.ServicesMock.callArgs = append(mmServices.ServicesMock.callArgs, params)
+	mmServices.ServicesMock.callArgs = append(mmServices.ServicesMock.callArgs, mm_params)
 	mmServices.ServicesMock.mutex.Unlock()
 
 	for _, e := range mmServices.ServicesMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.m1, e.results.err
 		}
@@ -916,22 +1299,22 @@ func (mmServices *CatalogMock) Services(dc string) (m1 map[string][]string, err 
 
 	if mmServices.ServicesMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmServices.ServicesMock.defaultExpectation.Counter, 1)
-		want := mmServices.ServicesMock.defaultExpectation.params
-		got := CatalogMockServicesParams{dc}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmServices.t.Errorf("CatalogMock.Services got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmServices.ServicesMock.defaultExpectation.params
+		mm_got := CatalogMockServicesParams{c1, s1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmServices.t.Errorf("CatalogMock.Services got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmServices.ServicesMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmServices.ServicesMock.defaultExpectation.results
+		if mm_results == nil {
 			mmServices.t.Fatal("No results are set for the CatalogMock.Services")
 		}
-		return (*results).m1, (*results).err
+		return (*mm_results).m1, (*mm_results).err
 	}
 	if mmServices.funcServices != nil {
-		return mmServices.funcServices(dc)
+		return mmServices.funcServices(c1, s1)
 	}
-	mmServices.t.Fatalf("Unexpected call to CatalogMock.Services. %v", dc)
+	mmServices.t.Fatalf("Unexpected call to CatalogMock.Services. %v %v", c1, s1)
 	return
 }
 
@@ -1003,7 +1386,9 @@ func (m *CatalogMock) MinimockServicesInspect() {
 // MinimockFinish checks that all mocked methods have been called the expected number of times
 func (m *CatalogMock) MinimockFinish() {
 	if !m.minimockDone() {
-		m.MinimockDatacentersInspect()
+		m.MinimockConnectInspect()
+
+		m.MinimockDataCentersInspect()
 
 		m.MinimockNodeInspect()
 
@@ -1035,7 +1420,8 @@ func (m *CatalogMock) MinimockWait(timeout mm_time.Duration) {
 func (m *CatalogMock) minimockDone() bool {
 	done := true
 	return done &&
-		m.MinimockDatacentersDone() &&
+		m.MinimockConnectDone() &&
+		m.MinimockDataCentersDone() &&
 		m.MinimockNodeDone() &&
 		m.MinimockNodesDone() &&
 		m.MinimockServiceDone() &&

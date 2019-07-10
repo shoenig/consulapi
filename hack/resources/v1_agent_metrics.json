@@ -1,0 +1,219 @@
+{
+  "Timestamp": "2019-07-14 17:49:10 +0000 UTC",
+  "Gauges": [
+    {
+      "Name": "consul.runtime.alloc_bytes.alloc_bytes",
+      "Value": 6638048,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.runtime.free_count.free_count",
+      "Value": 946139800,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.runtime.heap_objects.heap_objects",
+      "Value": 30054,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.runtime.malloc_count.malloc_count",
+      "Value": 946169860,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.runtime.num_goroutines.num_goroutines",
+      "Value": 64,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.runtime.sys_bytes.sys_bytes",
+      "Value": 72546550,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.runtime.total_gc_pause_ns.total_gc_pause_ns",
+      "Value": 36736217000,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.runtime.total_gc_runs.total_gc_runs",
+      "Value": 96090,
+      "Labels": {}
+    }
+  ],
+  "Points": [],
+  "Counters": [
+    {
+      "Name": "consul.client.api.catalog_datacenters",
+      "Count": 1,
+      "Rate": 0.1,
+      "Sum": 1,
+      "Min": 1,
+      "Max": 1,
+      "Mean": 1,
+      "Stddev": 0,
+      "Labels": {
+        "node": "mydc-mynode1"
+      }
+    },
+    {
+      "Name": "consul.client.api.success.catalog_datacenters",
+      "Count": 1,
+      "Rate": 0.1,
+      "Sum": 1,
+      "Min": 1,
+      "Max": 1,
+      "Mean": 1,
+      "Stddev": 0,
+      "Labels": {
+        "node": "mydc-mynode1"
+      }
+    },
+    {
+      "Name": "consul.client.rpc",
+      "Count": 20,
+      "Rate": 2,
+      "Sum": 20,
+      "Min": 1,
+      "Max": 1,
+      "Mean": 1,
+      "Stddev": 0,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.memberlist.tcp.connect",
+      "Count": 1,
+      "Rate": 0.1,
+      "Sum": 1,
+      "Min": 1,
+      "Max": 1,
+      "Mean": 1,
+      "Stddev": 0,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.memberlist.tcp.sent",
+      "Count": 1,
+      "Rate": 324.7,
+      "Sum": 3247,
+      "Min": 3247,
+      "Max": 3247,
+      "Mean": 3247,
+      "Stddev": 0,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.memberlist.udp.received",
+      "Count": 23,
+      "Rate": 262.1,
+      "Sum": 2621,
+      "Min": 59,
+      "Max": 183,
+      "Mean": 113.95652173913044,
+      "Stddev": 61.917451102158125,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.memberlist.udp.sent",
+      "Count": 23,
+      "Rate": 295.9,
+      "Sum": 2959,
+      "Min": 56,
+      "Max": 183,
+      "Mean": 128.65217391304347,
+      "Stddev": 63.192784898602994,
+      "Labels": {}
+    }
+  ],
+  "Samples": [
+    {
+      "Name": "consul.http.GET.v1.catalog.datacenters",
+      "Count": 1,
+      "Rate": 0.07595720291137695,
+      "Sum": 0.7595720291137695,
+      "Min": 0.7595720291137695,
+      "Max": 0.7595720291137695,
+      "Mean": 0.7595720291137695,
+      "Stddev": 0,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.http.GET.v1.kv._",
+      "Count": 18,
+      "Rate": 1.9581477880477904,
+      "Sum": 19.581477880477905,
+      "Min": 0.7063819766044617,
+      "Max": 1.7061799764633179,
+      "Mean": 1.0878598822487726,
+      "Stddev": 0.31108535095754636,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.http.GET.v1.status.leader",
+      "Count": 1,
+      "Rate": 0.1486001968383789,
+      "Sum": 1.486001968383789,
+      "Min": 1.486001968383789,
+      "Max": 1.486001968383789,
+      "Mean": 1.486001968383789,
+      "Stddev": 0,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.memberlist.gossip",
+      "Count": 50,
+      "Rate": 0.08370949989184737,
+      "Sum": 0.8370949989184737,
+      "Min": 0.007447999902069569,
+      "Max": 0.022955000400543213,
+      "Mean": 0.016741899978369473,
+      "Stddev": 0.003181544282358616,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.memberlist.probeNode",
+      "Count": 10,
+      "Rate": 1.2123073935508728,
+      "Sum": 12.123073935508728,
+      "Min": 0.8150429725646973,
+      "Max": 1.770704984664917,
+      "Mean": 1.2123073935508728,
+      "Stddev": 0.38600804613363476,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.memberlist.pushPullNode",
+      "Count": 1,
+      "Rate": 0.3108066082000732,
+      "Sum": 3.1080660820007324,
+      "Min": 3.1080660820007324,
+      "Max": 3.1080660820007324,
+      "Mean": 3.1080660820007324,
+      "Stddev": 0,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.runtime.gc_pause_ns",
+      "Count": 2,
+      "Rate": 50806.1,
+      "Sum": 508061,
+      "Min": 136286,
+      "Max": 371775,
+      "Mean": 254030.5,
+      "Stddev": 166515.8687948389,
+      "Labels": {}
+    },
+    {
+      "Name": "consul.serf.coordinate.adjustment-ms",
+      "Count": 10,
+      "Rate": 0.052622399665415286,
+      "Sum": 0.5262239966541529,
+      "Min": 0.026667999103665352,
+      "Max": 0.08971799910068512,
+      "Mean": 0.052622399665415286,
+      "Stddev": 0.021631172637377356,
+      "Labels": {}
+    }
+  ]
+}

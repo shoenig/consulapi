@@ -1,0 +1,41 @@
+[
+  {
+    "ID": "2152c206-ccb9-5451-afb8-f3a9f5c2a374",
+    "Name": "common/consul/lock/tst-node1",
+    "Node": "tst-node1",
+    "Checks": [
+      "serfHealth"
+    ],
+    "LockDelay": 15000000000,
+    "Behavior": "release",
+    "TTL": "60s",
+    "CreateIndex": 8366178922,
+    "ModifyIndex": 8366178922
+  },
+  {
+    "ID": "35e63278-0310-c915-6a4a-3f8f27f3a02d",
+    "Name": "testbird-mon-leader-session",
+    "Node": "tst-node1",
+    "Checks": [
+      "serfHealth"
+    ],
+    "LockDelay": 3000000000,
+    "Behavior": "delete",
+    "TTL": "10s",
+    "CreateIndex": 8375491054,
+    "ModifyIndex": 8375491054
+  },
+  {
+    "ID": "492c9bea-ce34-8386-44de-1f9105b8a0d5",
+    "Name": "",
+    "Node": "tst-node1",
+    "Checks": [
+      "serfHealth"
+    ],
+    "LockDelay": 5000000000,
+    "Behavior": "release",
+    "TTL": "30s",
+    "CreateIndex": 8357137743,
+    "ModifyIndex": 8357137743
+  }
+]

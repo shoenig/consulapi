@@ -8,34 +8,39 @@ import (
 	"time"
 	mm_time "time"
 
-	"github.com/gojuno/minimock"
+	"github.com/gojuno/minimock/v3"
 )
 
 // SessionMock implements Session
 type SessionMock struct {
 	t minimock.Tester
 
-	funcCreateSession          func(dc string, config SessionConfig) (s1 SessionID, err error)
+	funcCreateSession          func(c1 Ctx, s1 SessionConfig) (s2 SessionID, err error)
+	inspectFuncCreateSession   func(c1 Ctx, s1 SessionConfig)
 	afterCreateSessionCounter  uint64
 	beforeCreateSessionCounter uint64
 	CreateSessionMock          mSessionMockCreateSession
 
-	funcDeleteSession          func(dc string, id SessionID) (err error)
+	funcDeleteSession          func(c1 Ctx, s1 SessionQuery) (err error)
+	inspectFuncDeleteSession   func(c1 Ctx, s1 SessionQuery)
 	afterDeleteSessionCounter  uint64
 	beforeDeleteSessionCounter uint64
 	DeleteSessionMock          mSessionMockDeleteSession
 
-	funcListSessions          func(dc string, node string) (m1 map[SessionID]SessionConfig, err error)
+	funcListSessions          func(ctx Ctx, dc string, node string) (m1 map[SessionID]SessionConfig, err error)
+	inspectFuncListSessions   func(ctx Ctx, dc string, node string)
 	afterListSessionsCounter  uint64
 	beforeListSessionsCounter uint64
 	ListSessionsMock          mSessionMockListSessions
 
-	funcReadSession          func(dc string, id SessionID) (s1 SessionConfig, err error)
+	funcReadSession          func(c1 Ctx, s1 SessionQuery) (s2 SessionConfig, err error)
+	inspectFuncReadSession   func(c1 Ctx, s1 SessionQuery)
 	afterReadSessionCounter  uint64
 	beforeReadSessionCounter uint64
 	ReadSessionMock          mSessionMockReadSession
 
-	funcRenewSession          func(dc string, id SessionID) (d1 time.Duration, err error)
+	funcRenewSession          func(c1 Ctx, s1 SessionQuery) (d1 time.Duration, err error)
+	inspectFuncRenewSession   func(c1 Ctx, s1 SessionQuery)
 	afterRenewSessionCounter  uint64
 	beforeRenewSessionCounter uint64
 	RenewSessionMock          mSessionMockRenewSession
@@ -85,18 +90,18 @@ type SessionMockCreateSessionExpectation struct {
 
 // SessionMockCreateSessionParams contains parameters of the Session.CreateSession
 type SessionMockCreateSessionParams struct {
-	dc     string
-	config SessionConfig
+	c1 Ctx
+	s1 SessionConfig
 }
 
 // SessionMockCreateSessionResults contains results of the Session.CreateSession
 type SessionMockCreateSessionResults struct {
-	s1  SessionID
+	s2  SessionID
 	err error
 }
 
 // Expect sets up expected params for Session.CreateSession
-func (mmCreateSession *mSessionMockCreateSession) Expect(dc string, config SessionConfig) *mSessionMockCreateSession {
+func (mmCreateSession *mSessionMockCreateSession) Expect(c1 Ctx, s1 SessionConfig) *mSessionMockCreateSession {
 	if mmCreateSession.mock.funcCreateSession != nil {
 		mmCreateSession.mock.t.Fatalf("SessionMock.CreateSession mock is already set by Set")
 	}
@@ -105,7 +110,7 @@ func (mmCreateSession *mSessionMockCreateSession) Expect(dc string, config Sessi
 		mmCreateSession.defaultExpectation = &SessionMockCreateSessionExpectation{}
 	}
 
-	mmCreateSession.defaultExpectation.params = &SessionMockCreateSessionParams{dc, config}
+	mmCreateSession.defaultExpectation.params = &SessionMockCreateSessionParams{c1, s1}
 	for _, e := range mmCreateSession.expectations {
 		if minimock.Equal(e.params, mmCreateSession.defaultExpectation.params) {
 			mmCreateSession.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmCreateSession.defaultExpectation.params)
@@ -115,8 +120,19 @@ func (mmCreateSession *mSessionMockCreateSession) Expect(dc string, config Sessi
 	return mmCreateSession
 }
 
+// Inspect accepts an inspector function that has same arguments as the Session.CreateSession
+func (mmCreateSession *mSessionMockCreateSession) Inspect(f func(c1 Ctx, s1 SessionConfig)) *mSessionMockCreateSession {
+	if mmCreateSession.mock.inspectFuncCreateSession != nil {
+		mmCreateSession.mock.t.Fatalf("Inspect function is already set for SessionMock.CreateSession")
+	}
+
+	mmCreateSession.mock.inspectFuncCreateSession = f
+
+	return mmCreateSession
+}
+
 // Return sets up results that will be returned by Session.CreateSession
-func (mmCreateSession *mSessionMockCreateSession) Return(s1 SessionID, err error) *SessionMock {
+func (mmCreateSession *mSessionMockCreateSession) Return(s2 SessionID, err error) *SessionMock {
 	if mmCreateSession.mock.funcCreateSession != nil {
 		mmCreateSession.mock.t.Fatalf("SessionMock.CreateSession mock is already set by Set")
 	}
@@ -124,12 +140,12 @@ func (mmCreateSession *mSessionMockCreateSession) Return(s1 SessionID, err error
 	if mmCreateSession.defaultExpectation == nil {
 		mmCreateSession.defaultExpectation = &SessionMockCreateSessionExpectation{mock: mmCreateSession.mock}
 	}
-	mmCreateSession.defaultExpectation.results = &SessionMockCreateSessionResults{s1, err}
+	mmCreateSession.defaultExpectation.results = &SessionMockCreateSessionResults{s2, err}
 	return mmCreateSession.mock
 }
 
 //Set uses given function f to mock the Session.CreateSession method
-func (mmCreateSession *mSessionMockCreateSession) Set(f func(dc string, config SessionConfig) (s1 SessionID, err error)) *SessionMock {
+func (mmCreateSession *mSessionMockCreateSession) Set(f func(c1 Ctx, s1 SessionConfig) (s2 SessionID, err error)) *SessionMock {
 	if mmCreateSession.defaultExpectation != nil {
 		mmCreateSession.mock.t.Fatalf("Default expectation is already set for the Session.CreateSession method")
 	}
@@ -144,62 +160,66 @@ func (mmCreateSession *mSessionMockCreateSession) Set(f func(dc string, config S
 
 // When sets expectation for the Session.CreateSession which will trigger the result defined by the following
 // Then helper
-func (mmCreateSession *mSessionMockCreateSession) When(dc string, config SessionConfig) *SessionMockCreateSessionExpectation {
+func (mmCreateSession *mSessionMockCreateSession) When(c1 Ctx, s1 SessionConfig) *SessionMockCreateSessionExpectation {
 	if mmCreateSession.mock.funcCreateSession != nil {
 		mmCreateSession.mock.t.Fatalf("SessionMock.CreateSession mock is already set by Set")
 	}
 
 	expectation := &SessionMockCreateSessionExpectation{
 		mock:   mmCreateSession.mock,
-		params: &SessionMockCreateSessionParams{dc, config},
+		params: &SessionMockCreateSessionParams{c1, s1},
 	}
 	mmCreateSession.expectations = append(mmCreateSession.expectations, expectation)
 	return expectation
 }
 
 // Then sets up Session.CreateSession return parameters for the expectation previously defined by the When method
-func (e *SessionMockCreateSessionExpectation) Then(s1 SessionID, err error) *SessionMock {
-	e.results = &SessionMockCreateSessionResults{s1, err}
+func (e *SessionMockCreateSessionExpectation) Then(s2 SessionID, err error) *SessionMock {
+	e.results = &SessionMockCreateSessionResults{s2, err}
 	return e.mock
 }
 
 // CreateSession implements Session
-func (mmCreateSession *SessionMock) CreateSession(dc string, config SessionConfig) (s1 SessionID, err error) {
+func (mmCreateSession *SessionMock) CreateSession(c1 Ctx, s1 SessionConfig) (s2 SessionID, err error) {
 	mm_atomic.AddUint64(&mmCreateSession.beforeCreateSessionCounter, 1)
 	defer mm_atomic.AddUint64(&mmCreateSession.afterCreateSessionCounter, 1)
 
-	params := &SessionMockCreateSessionParams{dc, config}
+	if mmCreateSession.inspectFuncCreateSession != nil {
+		mmCreateSession.inspectFuncCreateSession(c1, s1)
+	}
+
+	mm_params := &SessionMockCreateSessionParams{c1, s1}
 
 	// Record call args
 	mmCreateSession.CreateSessionMock.mutex.Lock()
-	mmCreateSession.CreateSessionMock.callArgs = append(mmCreateSession.CreateSessionMock.callArgs, params)
+	mmCreateSession.CreateSessionMock.callArgs = append(mmCreateSession.CreateSessionMock.callArgs, mm_params)
 	mmCreateSession.CreateSessionMock.mutex.Unlock()
 
 	for _, e := range mmCreateSession.CreateSessionMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.s1, e.results.err
+			return e.results.s2, e.results.err
 		}
 	}
 
 	if mmCreateSession.CreateSessionMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmCreateSession.CreateSessionMock.defaultExpectation.Counter, 1)
-		want := mmCreateSession.CreateSessionMock.defaultExpectation.params
-		got := SessionMockCreateSessionParams{dc, config}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmCreateSession.t.Errorf("SessionMock.CreateSession got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmCreateSession.CreateSessionMock.defaultExpectation.params
+		mm_got := SessionMockCreateSessionParams{c1, s1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmCreateSession.t.Errorf("SessionMock.CreateSession got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmCreateSession.CreateSessionMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmCreateSession.CreateSessionMock.defaultExpectation.results
+		if mm_results == nil {
 			mmCreateSession.t.Fatal("No results are set for the SessionMock.CreateSession")
 		}
-		return (*results).s1, (*results).err
+		return (*mm_results).s2, (*mm_results).err
 	}
 	if mmCreateSession.funcCreateSession != nil {
-		return mmCreateSession.funcCreateSession(dc, config)
+		return mmCreateSession.funcCreateSession(c1, s1)
 	}
-	mmCreateSession.t.Fatalf("Unexpected call to SessionMock.CreateSession. %v %v", dc, config)
+	mmCreateSession.t.Fatalf("Unexpected call to SessionMock.CreateSession. %v %v", c1, s1)
 	return
 }
 
@@ -287,8 +307,8 @@ type SessionMockDeleteSessionExpectation struct {
 
 // SessionMockDeleteSessionParams contains parameters of the Session.DeleteSession
 type SessionMockDeleteSessionParams struct {
-	dc string
-	id SessionID
+	c1 Ctx
+	s1 SessionQuery
 }
 
 // SessionMockDeleteSessionResults contains results of the Session.DeleteSession
@@ -297,7 +317,7 @@ type SessionMockDeleteSessionResults struct {
 }
 
 // Expect sets up expected params for Session.DeleteSession
-func (mmDeleteSession *mSessionMockDeleteSession) Expect(dc string, id SessionID) *mSessionMockDeleteSession {
+func (mmDeleteSession *mSessionMockDeleteSession) Expect(c1 Ctx, s1 SessionQuery) *mSessionMockDeleteSession {
 	if mmDeleteSession.mock.funcDeleteSession != nil {
 		mmDeleteSession.mock.t.Fatalf("SessionMock.DeleteSession mock is already set by Set")
 	}
@@ -306,12 +326,23 @@ func (mmDeleteSession *mSessionMockDeleteSession) Expect(dc string, id SessionID
 		mmDeleteSession.defaultExpectation = &SessionMockDeleteSessionExpectation{}
 	}
 
-	mmDeleteSession.defaultExpectation.params = &SessionMockDeleteSessionParams{dc, id}
+	mmDeleteSession.defaultExpectation.params = &SessionMockDeleteSessionParams{c1, s1}
 	for _, e := range mmDeleteSession.expectations {
 		if minimock.Equal(e.params, mmDeleteSession.defaultExpectation.params) {
 			mmDeleteSession.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmDeleteSession.defaultExpectation.params)
 		}
 	}
+
+	return mmDeleteSession
+}
+
+// Inspect accepts an inspector function that has same arguments as the Session.DeleteSession
+func (mmDeleteSession *mSessionMockDeleteSession) Inspect(f func(c1 Ctx, s1 SessionQuery)) *mSessionMockDeleteSession {
+	if mmDeleteSession.mock.inspectFuncDeleteSession != nil {
+		mmDeleteSession.mock.t.Fatalf("Inspect function is already set for SessionMock.DeleteSession")
+	}
+
+	mmDeleteSession.mock.inspectFuncDeleteSession = f
 
 	return mmDeleteSession
 }
@@ -330,7 +361,7 @@ func (mmDeleteSession *mSessionMockDeleteSession) Return(err error) *SessionMock
 }
 
 //Set uses given function f to mock the Session.DeleteSession method
-func (mmDeleteSession *mSessionMockDeleteSession) Set(f func(dc string, id SessionID) (err error)) *SessionMock {
+func (mmDeleteSession *mSessionMockDeleteSession) Set(f func(c1 Ctx, s1 SessionQuery) (err error)) *SessionMock {
 	if mmDeleteSession.defaultExpectation != nil {
 		mmDeleteSession.mock.t.Fatalf("Default expectation is already set for the Session.DeleteSession method")
 	}
@@ -345,14 +376,14 @@ func (mmDeleteSession *mSessionMockDeleteSession) Set(f func(dc string, id Sessi
 
 // When sets expectation for the Session.DeleteSession which will trigger the result defined by the following
 // Then helper
-func (mmDeleteSession *mSessionMockDeleteSession) When(dc string, id SessionID) *SessionMockDeleteSessionExpectation {
+func (mmDeleteSession *mSessionMockDeleteSession) When(c1 Ctx, s1 SessionQuery) *SessionMockDeleteSessionExpectation {
 	if mmDeleteSession.mock.funcDeleteSession != nil {
 		mmDeleteSession.mock.t.Fatalf("SessionMock.DeleteSession mock is already set by Set")
 	}
 
 	expectation := &SessionMockDeleteSessionExpectation{
 		mock:   mmDeleteSession.mock,
-		params: &SessionMockDeleteSessionParams{dc, id},
+		params: &SessionMockDeleteSessionParams{c1, s1},
 	}
 	mmDeleteSession.expectations = append(mmDeleteSession.expectations, expectation)
 	return expectation
@@ -365,19 +396,23 @@ func (e *SessionMockDeleteSessionExpectation) Then(err error) *SessionMock {
 }
 
 // DeleteSession implements Session
-func (mmDeleteSession *SessionMock) DeleteSession(dc string, id SessionID) (err error) {
+func (mmDeleteSession *SessionMock) DeleteSession(c1 Ctx, s1 SessionQuery) (err error) {
 	mm_atomic.AddUint64(&mmDeleteSession.beforeDeleteSessionCounter, 1)
 	defer mm_atomic.AddUint64(&mmDeleteSession.afterDeleteSessionCounter, 1)
 
-	params := &SessionMockDeleteSessionParams{dc, id}
+	if mmDeleteSession.inspectFuncDeleteSession != nil {
+		mmDeleteSession.inspectFuncDeleteSession(c1, s1)
+	}
+
+	mm_params := &SessionMockDeleteSessionParams{c1, s1}
 
 	// Record call args
 	mmDeleteSession.DeleteSessionMock.mutex.Lock()
-	mmDeleteSession.DeleteSessionMock.callArgs = append(mmDeleteSession.DeleteSessionMock.callArgs, params)
+	mmDeleteSession.DeleteSessionMock.callArgs = append(mmDeleteSession.DeleteSessionMock.callArgs, mm_params)
 	mmDeleteSession.DeleteSessionMock.mutex.Unlock()
 
 	for _, e := range mmDeleteSession.DeleteSessionMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.err
 		}
@@ -385,22 +420,22 @@ func (mmDeleteSession *SessionMock) DeleteSession(dc string, id SessionID) (err 
 
 	if mmDeleteSession.DeleteSessionMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmDeleteSession.DeleteSessionMock.defaultExpectation.Counter, 1)
-		want := mmDeleteSession.DeleteSessionMock.defaultExpectation.params
-		got := SessionMockDeleteSessionParams{dc, id}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmDeleteSession.t.Errorf("SessionMock.DeleteSession got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmDeleteSession.DeleteSessionMock.defaultExpectation.params
+		mm_got := SessionMockDeleteSessionParams{c1, s1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmDeleteSession.t.Errorf("SessionMock.DeleteSession got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmDeleteSession.DeleteSessionMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmDeleteSession.DeleteSessionMock.defaultExpectation.results
+		if mm_results == nil {
 			mmDeleteSession.t.Fatal("No results are set for the SessionMock.DeleteSession")
 		}
-		return (*results).err
+		return (*mm_results).err
 	}
 	if mmDeleteSession.funcDeleteSession != nil {
-		return mmDeleteSession.funcDeleteSession(dc, id)
+		return mmDeleteSession.funcDeleteSession(c1, s1)
 	}
-	mmDeleteSession.t.Fatalf("Unexpected call to SessionMock.DeleteSession. %v %v", dc, id)
+	mmDeleteSession.t.Fatalf("Unexpected call to SessionMock.DeleteSession. %v %v", c1, s1)
 	return
 }
 
@@ -488,6 +523,7 @@ type SessionMockListSessionsExpectation struct {
 
 // SessionMockListSessionsParams contains parameters of the Session.ListSessions
 type SessionMockListSessionsParams struct {
+	ctx  Ctx
 	dc   string
 	node string
 }
@@ -499,7 +535,7 @@ type SessionMockListSessionsResults struct {
 }
 
 // Expect sets up expected params for Session.ListSessions
-func (mmListSessions *mSessionMockListSessions) Expect(dc string, node string) *mSessionMockListSessions {
+func (mmListSessions *mSessionMockListSessions) Expect(ctx Ctx, dc string, node string) *mSessionMockListSessions {
 	if mmListSessions.mock.funcListSessions != nil {
 		mmListSessions.mock.t.Fatalf("SessionMock.ListSessions mock is already set by Set")
 	}
@@ -508,12 +544,23 @@ func (mmListSessions *mSessionMockListSessions) Expect(dc string, node string) *
 		mmListSessions.defaultExpectation = &SessionMockListSessionsExpectation{}
 	}
 
-	mmListSessions.defaultExpectation.params = &SessionMockListSessionsParams{dc, node}
+	mmListSessions.defaultExpectation.params = &SessionMockListSessionsParams{ctx, dc, node}
 	for _, e := range mmListSessions.expectations {
 		if minimock.Equal(e.params, mmListSessions.defaultExpectation.params) {
 			mmListSessions.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmListSessions.defaultExpectation.params)
 		}
 	}
+
+	return mmListSessions
+}
+
+// Inspect accepts an inspector function that has same arguments as the Session.ListSessions
+func (mmListSessions *mSessionMockListSessions) Inspect(f func(ctx Ctx, dc string, node string)) *mSessionMockListSessions {
+	if mmListSessions.mock.inspectFuncListSessions != nil {
+		mmListSessions.mock.t.Fatalf("Inspect function is already set for SessionMock.ListSessions")
+	}
+
+	mmListSessions.mock.inspectFuncListSessions = f
 
 	return mmListSessions
 }
@@ -532,7 +579,7 @@ func (mmListSessions *mSessionMockListSessions) Return(m1 map[SessionID]SessionC
 }
 
 //Set uses given function f to mock the Session.ListSessions method
-func (mmListSessions *mSessionMockListSessions) Set(f func(dc string, node string) (m1 map[SessionID]SessionConfig, err error)) *SessionMock {
+func (mmListSessions *mSessionMockListSessions) Set(f func(ctx Ctx, dc string, node string) (m1 map[SessionID]SessionConfig, err error)) *SessionMock {
 	if mmListSessions.defaultExpectation != nil {
 		mmListSessions.mock.t.Fatalf("Default expectation is already set for the Session.ListSessions method")
 	}
@@ -547,14 +594,14 @@ func (mmListSessions *mSessionMockListSessions) Set(f func(dc string, node strin
 
 // When sets expectation for the Session.ListSessions which will trigger the result defined by the following
 // Then helper
-func (mmListSessions *mSessionMockListSessions) When(dc string, node string) *SessionMockListSessionsExpectation {
+func (mmListSessions *mSessionMockListSessions) When(ctx Ctx, dc string, node string) *SessionMockListSessionsExpectation {
 	if mmListSessions.mock.funcListSessions != nil {
 		mmListSessions.mock.t.Fatalf("SessionMock.ListSessions mock is already set by Set")
 	}
 
 	expectation := &SessionMockListSessionsExpectation{
 		mock:   mmListSessions.mock,
-		params: &SessionMockListSessionsParams{dc, node},
+		params: &SessionMockListSessionsParams{ctx, dc, node},
 	}
 	mmListSessions.expectations = append(mmListSessions.expectations, expectation)
 	return expectation
@@ -567,19 +614,23 @@ func (e *SessionMockListSessionsExpectation) Then(m1 map[SessionID]SessionConfig
 }
 
 // ListSessions implements Session
-func (mmListSessions *SessionMock) ListSessions(dc string, node string) (m1 map[SessionID]SessionConfig, err error) {
+func (mmListSessions *SessionMock) ListSessions(ctx Ctx, dc string, node string) (m1 map[SessionID]SessionConfig, err error) {
 	mm_atomic.AddUint64(&mmListSessions.beforeListSessionsCounter, 1)
 	defer mm_atomic.AddUint64(&mmListSessions.afterListSessionsCounter, 1)
 
-	params := &SessionMockListSessionsParams{dc, node}
+	if mmListSessions.inspectFuncListSessions != nil {
+		mmListSessions.inspectFuncListSessions(ctx, dc, node)
+	}
+
+	mm_params := &SessionMockListSessionsParams{ctx, dc, node}
 
 	// Record call args
 	mmListSessions.ListSessionsMock.mutex.Lock()
-	mmListSessions.ListSessionsMock.callArgs = append(mmListSessions.ListSessionsMock.callArgs, params)
+	mmListSessions.ListSessionsMock.callArgs = append(mmListSessions.ListSessionsMock.callArgs, mm_params)
 	mmListSessions.ListSessionsMock.mutex.Unlock()
 
 	for _, e := range mmListSessions.ListSessionsMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.m1, e.results.err
 		}
@@ -587,22 +638,22 @@ func (mmListSessions *SessionMock) ListSessions(dc string, node string) (m1 map[
 
 	if mmListSessions.ListSessionsMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmListSessions.ListSessionsMock.defaultExpectation.Counter, 1)
-		want := mmListSessions.ListSessionsMock.defaultExpectation.params
-		got := SessionMockListSessionsParams{dc, node}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmListSessions.t.Errorf("SessionMock.ListSessions got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmListSessions.ListSessionsMock.defaultExpectation.params
+		mm_got := SessionMockListSessionsParams{ctx, dc, node}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmListSessions.t.Errorf("SessionMock.ListSessions got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmListSessions.ListSessionsMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmListSessions.ListSessionsMock.defaultExpectation.results
+		if mm_results == nil {
 			mmListSessions.t.Fatal("No results are set for the SessionMock.ListSessions")
 		}
-		return (*results).m1, (*results).err
+		return (*mm_results).m1, (*mm_results).err
 	}
 	if mmListSessions.funcListSessions != nil {
-		return mmListSessions.funcListSessions(dc, node)
+		return mmListSessions.funcListSessions(ctx, dc, node)
 	}
-	mmListSessions.t.Fatalf("Unexpected call to SessionMock.ListSessions. %v %v", dc, node)
+	mmListSessions.t.Fatalf("Unexpected call to SessionMock.ListSessions. %v %v %v", ctx, dc, node)
 	return
 }
 
@@ -690,18 +741,18 @@ type SessionMockReadSessionExpectation struct {
 
 // SessionMockReadSessionParams contains parameters of the Session.ReadSession
 type SessionMockReadSessionParams struct {
-	dc string
-	id SessionID
+	c1 Ctx
+	s1 SessionQuery
 }
 
 // SessionMockReadSessionResults contains results of the Session.ReadSession
 type SessionMockReadSessionResults struct {
-	s1  SessionConfig
+	s2  SessionConfig
 	err error
 }
 
 // Expect sets up expected params for Session.ReadSession
-func (mmReadSession *mSessionMockReadSession) Expect(dc string, id SessionID) *mSessionMockReadSession {
+func (mmReadSession *mSessionMockReadSession) Expect(c1 Ctx, s1 SessionQuery) *mSessionMockReadSession {
 	if mmReadSession.mock.funcReadSession != nil {
 		mmReadSession.mock.t.Fatalf("SessionMock.ReadSession mock is already set by Set")
 	}
@@ -710,7 +761,7 @@ func (mmReadSession *mSessionMockReadSession) Expect(dc string, id SessionID) *m
 		mmReadSession.defaultExpectation = &SessionMockReadSessionExpectation{}
 	}
 
-	mmReadSession.defaultExpectation.params = &SessionMockReadSessionParams{dc, id}
+	mmReadSession.defaultExpectation.params = &SessionMockReadSessionParams{c1, s1}
 	for _, e := range mmReadSession.expectations {
 		if minimock.Equal(e.params, mmReadSession.defaultExpectation.params) {
 			mmReadSession.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmReadSession.defaultExpectation.params)
@@ -720,8 +771,19 @@ func (mmReadSession *mSessionMockReadSession) Expect(dc string, id SessionID) *m
 	return mmReadSession
 }
 
+// Inspect accepts an inspector function that has same arguments as the Session.ReadSession
+func (mmReadSession *mSessionMockReadSession) Inspect(f func(c1 Ctx, s1 SessionQuery)) *mSessionMockReadSession {
+	if mmReadSession.mock.inspectFuncReadSession != nil {
+		mmReadSession.mock.t.Fatalf("Inspect function is already set for SessionMock.ReadSession")
+	}
+
+	mmReadSession.mock.inspectFuncReadSession = f
+
+	return mmReadSession
+}
+
 // Return sets up results that will be returned by Session.ReadSession
-func (mmReadSession *mSessionMockReadSession) Return(s1 SessionConfig, err error) *SessionMock {
+func (mmReadSession *mSessionMockReadSession) Return(s2 SessionConfig, err error) *SessionMock {
 	if mmReadSession.mock.funcReadSession != nil {
 		mmReadSession.mock.t.Fatalf("SessionMock.ReadSession mock is already set by Set")
 	}
@@ -729,12 +791,12 @@ func (mmReadSession *mSessionMockReadSession) Return(s1 SessionConfig, err error
 	if mmReadSession.defaultExpectation == nil {
 		mmReadSession.defaultExpectation = &SessionMockReadSessionExpectation{mock: mmReadSession.mock}
 	}
-	mmReadSession.defaultExpectation.results = &SessionMockReadSessionResults{s1, err}
+	mmReadSession.defaultExpectation.results = &SessionMockReadSessionResults{s2, err}
 	return mmReadSession.mock
 }
 
 //Set uses given function f to mock the Session.ReadSession method
-func (mmReadSession *mSessionMockReadSession) Set(f func(dc string, id SessionID) (s1 SessionConfig, err error)) *SessionMock {
+func (mmReadSession *mSessionMockReadSession) Set(f func(c1 Ctx, s1 SessionQuery) (s2 SessionConfig, err error)) *SessionMock {
 	if mmReadSession.defaultExpectation != nil {
 		mmReadSession.mock.t.Fatalf("Default expectation is already set for the Session.ReadSession method")
 	}
@@ -749,62 +811,66 @@ func (mmReadSession *mSessionMockReadSession) Set(f func(dc string, id SessionID
 
 // When sets expectation for the Session.ReadSession which will trigger the result defined by the following
 // Then helper
-func (mmReadSession *mSessionMockReadSession) When(dc string, id SessionID) *SessionMockReadSessionExpectation {
+func (mmReadSession *mSessionMockReadSession) When(c1 Ctx, s1 SessionQuery) *SessionMockReadSessionExpectation {
 	if mmReadSession.mock.funcReadSession != nil {
 		mmReadSession.mock.t.Fatalf("SessionMock.ReadSession mock is already set by Set")
 	}
 
 	expectation := &SessionMockReadSessionExpectation{
 		mock:   mmReadSession.mock,
-		params: &SessionMockReadSessionParams{dc, id},
+		params: &SessionMockReadSessionParams{c1, s1},
 	}
 	mmReadSession.expectations = append(mmReadSession.expectations, expectation)
 	return expectation
 }
 
 // Then sets up Session.ReadSession return parameters for the expectation previously defined by the When method
-func (e *SessionMockReadSessionExpectation) Then(s1 SessionConfig, err error) *SessionMock {
-	e.results = &SessionMockReadSessionResults{s1, err}
+func (e *SessionMockReadSessionExpectation) Then(s2 SessionConfig, err error) *SessionMock {
+	e.results = &SessionMockReadSessionResults{s2, err}
 	return e.mock
 }
 
 // ReadSession implements Session
-func (mmReadSession *SessionMock) ReadSession(dc string, id SessionID) (s1 SessionConfig, err error) {
+func (mmReadSession *SessionMock) ReadSession(c1 Ctx, s1 SessionQuery) (s2 SessionConfig, err error) {
 	mm_atomic.AddUint64(&mmReadSession.beforeReadSessionCounter, 1)
 	defer mm_atomic.AddUint64(&mmReadSession.afterReadSessionCounter, 1)
 
-	params := &SessionMockReadSessionParams{dc, id}
+	if mmReadSession.inspectFuncReadSession != nil {
+		mmReadSession.inspectFuncReadSession(c1, s1)
+	}
+
+	mm_params := &SessionMockReadSessionParams{c1, s1}
 
 	// Record call args
 	mmReadSession.ReadSessionMock.mutex.Lock()
-	mmReadSession.ReadSessionMock.callArgs = append(mmReadSession.ReadSessionMock.callArgs, params)
+	mmReadSession.ReadSessionMock.callArgs = append(mmReadSession.ReadSessionMock.callArgs, mm_params)
 	mmReadSession.ReadSessionMock.mutex.Unlock()
 
 	for _, e := range mmReadSession.ReadSessionMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.s1, e.results.err
+			return e.results.s2, e.results.err
 		}
 	}
 
 	if mmReadSession.ReadSessionMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmReadSession.ReadSessionMock.defaultExpectation.Counter, 1)
-		want := mmReadSession.ReadSessionMock.defaultExpectation.params
-		got := SessionMockReadSessionParams{dc, id}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmReadSession.t.Errorf("SessionMock.ReadSession got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmReadSession.ReadSessionMock.defaultExpectation.params
+		mm_got := SessionMockReadSessionParams{c1, s1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmReadSession.t.Errorf("SessionMock.ReadSession got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmReadSession.ReadSessionMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmReadSession.ReadSessionMock.defaultExpectation.results
+		if mm_results == nil {
 			mmReadSession.t.Fatal("No results are set for the SessionMock.ReadSession")
 		}
-		return (*results).s1, (*results).err
+		return (*mm_results).s2, (*mm_results).err
 	}
 	if mmReadSession.funcReadSession != nil {
-		return mmReadSession.funcReadSession(dc, id)
+		return mmReadSession.funcReadSession(c1, s1)
 	}
-	mmReadSession.t.Fatalf("Unexpected call to SessionMock.ReadSession. %v %v", dc, id)
+	mmReadSession.t.Fatalf("Unexpected call to SessionMock.ReadSession. %v %v", c1, s1)
 	return
 }
 
@@ -892,8 +958,8 @@ type SessionMockRenewSessionExpectation struct {
 
 // SessionMockRenewSessionParams contains parameters of the Session.RenewSession
 type SessionMockRenewSessionParams struct {
-	dc string
-	id SessionID
+	c1 Ctx
+	s1 SessionQuery
 }
 
 // SessionMockRenewSessionResults contains results of the Session.RenewSession
@@ -903,7 +969,7 @@ type SessionMockRenewSessionResults struct {
 }
 
 // Expect sets up expected params for Session.RenewSession
-func (mmRenewSession *mSessionMockRenewSession) Expect(dc string, id SessionID) *mSessionMockRenewSession {
+func (mmRenewSession *mSessionMockRenewSession) Expect(c1 Ctx, s1 SessionQuery) *mSessionMockRenewSession {
 	if mmRenewSession.mock.funcRenewSession != nil {
 		mmRenewSession.mock.t.Fatalf("SessionMock.RenewSession mock is already set by Set")
 	}
@@ -912,12 +978,23 @@ func (mmRenewSession *mSessionMockRenewSession) Expect(dc string, id SessionID) 
 		mmRenewSession.defaultExpectation = &SessionMockRenewSessionExpectation{}
 	}
 
-	mmRenewSession.defaultExpectation.params = &SessionMockRenewSessionParams{dc, id}
+	mmRenewSession.defaultExpectation.params = &SessionMockRenewSessionParams{c1, s1}
 	for _, e := range mmRenewSession.expectations {
 		if minimock.Equal(e.params, mmRenewSession.defaultExpectation.params) {
 			mmRenewSession.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmRenewSession.defaultExpectation.params)
 		}
 	}
+
+	return mmRenewSession
+}
+
+// Inspect accepts an inspector function that has same arguments as the Session.RenewSession
+func (mmRenewSession *mSessionMockRenewSession) Inspect(f func(c1 Ctx, s1 SessionQuery)) *mSessionMockRenewSession {
+	if mmRenewSession.mock.inspectFuncRenewSession != nil {
+		mmRenewSession.mock.t.Fatalf("Inspect function is already set for SessionMock.RenewSession")
+	}
+
+	mmRenewSession.mock.inspectFuncRenewSession = f
 
 	return mmRenewSession
 }
@@ -936,7 +1013,7 @@ func (mmRenewSession *mSessionMockRenewSession) Return(d1 time.Duration, err err
 }
 
 //Set uses given function f to mock the Session.RenewSession method
-func (mmRenewSession *mSessionMockRenewSession) Set(f func(dc string, id SessionID) (d1 time.Duration, err error)) *SessionMock {
+func (mmRenewSession *mSessionMockRenewSession) Set(f func(c1 Ctx, s1 SessionQuery) (d1 time.Duration, err error)) *SessionMock {
 	if mmRenewSession.defaultExpectation != nil {
 		mmRenewSession.mock.t.Fatalf("Default expectation is already set for the Session.RenewSession method")
 	}
@@ -951,14 +1028,14 @@ func (mmRenewSession *mSessionMockRenewSession) Set(f func(dc string, id Session
 
 // When sets expectation for the Session.RenewSession which will trigger the result defined by the following
 // Then helper
-func (mmRenewSession *mSessionMockRenewSession) When(dc string, id SessionID) *SessionMockRenewSessionExpectation {
+func (mmRenewSession *mSessionMockRenewSession) When(c1 Ctx, s1 SessionQuery) *SessionMockRenewSessionExpectation {
 	if mmRenewSession.mock.funcRenewSession != nil {
 		mmRenewSession.mock.t.Fatalf("SessionMock.RenewSession mock is already set by Set")
 	}
 
 	expectation := &SessionMockRenewSessionExpectation{
 		mock:   mmRenewSession.mock,
-		params: &SessionMockRenewSessionParams{dc, id},
+		params: &SessionMockRenewSessionParams{c1, s1},
 	}
 	mmRenewSession.expectations = append(mmRenewSession.expectations, expectation)
 	return expectation
@@ -971,19 +1048,23 @@ func (e *SessionMockRenewSessionExpectation) Then(d1 time.Duration, err error) *
 }
 
 // RenewSession implements Session
-func (mmRenewSession *SessionMock) RenewSession(dc string, id SessionID) (d1 time.Duration, err error) {
+func (mmRenewSession *SessionMock) RenewSession(c1 Ctx, s1 SessionQuery) (d1 time.Duration, err error) {
 	mm_atomic.AddUint64(&mmRenewSession.beforeRenewSessionCounter, 1)
 	defer mm_atomic.AddUint64(&mmRenewSession.afterRenewSessionCounter, 1)
 
-	params := &SessionMockRenewSessionParams{dc, id}
+	if mmRenewSession.inspectFuncRenewSession != nil {
+		mmRenewSession.inspectFuncRenewSession(c1, s1)
+	}
+
+	mm_params := &SessionMockRenewSessionParams{c1, s1}
 
 	// Record call args
 	mmRenewSession.RenewSessionMock.mutex.Lock()
-	mmRenewSession.RenewSessionMock.callArgs = append(mmRenewSession.RenewSessionMock.callArgs, params)
+	mmRenewSession.RenewSessionMock.callArgs = append(mmRenewSession.RenewSessionMock.callArgs, mm_params)
 	mmRenewSession.RenewSessionMock.mutex.Unlock()
 
 	for _, e := range mmRenewSession.RenewSessionMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.d1, e.results.err
 		}
@@ -991,22 +1072,22 @@ func (mmRenewSession *SessionMock) RenewSession(dc string, id SessionID) (d1 tim
 
 	if mmRenewSession.RenewSessionMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmRenewSession.RenewSessionMock.defaultExpectation.Counter, 1)
-		want := mmRenewSession.RenewSessionMock.defaultExpectation.params
-		got := SessionMockRenewSessionParams{dc, id}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmRenewSession.t.Errorf("SessionMock.RenewSession got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmRenewSession.RenewSessionMock.defaultExpectation.params
+		mm_got := SessionMockRenewSessionParams{c1, s1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmRenewSession.t.Errorf("SessionMock.RenewSession got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmRenewSession.RenewSessionMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmRenewSession.RenewSessionMock.defaultExpectation.results
+		if mm_results == nil {
 			mmRenewSession.t.Fatal("No results are set for the SessionMock.RenewSession")
 		}
-		return (*results).d1, (*results).err
+		return (*mm_results).d1, (*mm_results).err
 	}
 	if mmRenewSession.funcRenewSession != nil {
-		return mmRenewSession.funcRenewSession(dc, id)
+		return mmRenewSession.funcRenewSession(c1, s1)
 	}
-	mmRenewSession.t.Fatalf("Unexpected call to SessionMock.RenewSession. %v %v", dc, id)
+	mmRenewSession.t.Fatalf("Unexpected call to SessionMock.RenewSession. %v %v", c1, s1)
 	return
 }
 
