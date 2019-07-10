@@ -1,5 +1,3 @@
-// Author hoenig
-
 package consulapi
 
 import (
@@ -8,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate mockery -interface Agent -package consulapitest
+//go:generate go run github.com/gojuno/minimock/cmd/minimock -g -i Agent -s _mock.go
 
 // Agent provides an interface to information about the
 // consul agent that is being communicated with.

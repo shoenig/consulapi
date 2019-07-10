@@ -1,10 +1,8 @@
 module github.com/shoenig/consulapi
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/gojuno/minimock v2.1.7+incompatible
 	github.com/pkg/errors v0.8.0
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/shoenig/toolkit v1.0.0
-	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.2.2
 )

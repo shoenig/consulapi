@@ -1,10 +1,8 @@
-// Author hoenig
-
 package consulapi
 
 import "sort"
 
-//go:generate mockery -interface Catalog -package consulapitest
+//go:generate go run github.com/gojuno/minimock/cmd/minimock -g -i Catalog -s _mock.go
 
 // A Catalog represents the consul catalog feature.
 type Catalog interface {

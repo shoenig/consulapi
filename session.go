@@ -1,5 +1,3 @@
-// Author hoenig
-
 package consulapi
 
 import (
@@ -70,7 +68,7 @@ type sessionConfigFormat3 struct {
 	Behavior  string  `json:"Behavior"`
 }
 
-//go:generate mockery -interface Session -package consulapitest
+//go:generate go run github.com/gojuno/minimock/cmd/minimock -g -i Session -s _mock.go
 
 type Session interface {
 	CreateSession(dc string, config SessionConfig) (SessionID, error)

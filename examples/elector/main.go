@@ -1,16 +1,14 @@
-// Author hoenig
-
 package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"time"
 
-	"fmt"
-
 	"github.com/pkg/errors"
+
 	"github.com/shoenig/consulapi"
 )
 
