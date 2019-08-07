@@ -2,4 +2,4 @@
 
 package consulapi
 
-import _ "github.com/gojuno/minimock/cmd/minimock"
+import _ "github.com/gojuno/minimock/v3"

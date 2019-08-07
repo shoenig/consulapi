@@ -4,10 +4,7 @@ go:
   - 1.12.x
 
 install:
-  - hack/travis-setup.sh
-
-before_script:
-  - hack/travis-run.sh
+  - echo "no install step"
 
 script:
   - go generate ./...

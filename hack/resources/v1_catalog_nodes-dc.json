@@ -1,0 +1,15 @@
+[
+  {
+    "ID": "4939104-f4e2-ee88-5b48-9ec93abf3c06",
+    "Node": "dc2-node1",
+    "Address": "10.0.1.1",
+    "Datacenter": "dc2",
+    "TaggedAddresses": {
+      "lan": "10.0.1.1",
+      "wan": "1.1.1.3"
+    },
+    "Meta": {
+      "instance_type": "t2.large"
+    }
+  }
+]

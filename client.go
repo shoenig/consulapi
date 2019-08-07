@@ -1,17 +1,18 @@
-package consulapi
+package consulapi // import "gophers.dev/pkgs/consulapi"
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"github.com/shoenig/toolkit"
+	clean "github.com/hashicorp/go-cleanhttp"
+
+	"gophers.dev/pkgs/ignore"
+	"gophers.dev/pkgs/loggy"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 	consulTokenHeader = "X-Consul-Token"
 )
 
-//go:generate go run github.com/gojuno/minimock/cmd/minimock -g -i Client -s _mock.go
+//go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -g -i Client -s _mock.go
 
 // A Client is used to communicate with consul. The interface is composed of
 // other interfaces, which reflect the different categories of API supported by
@@ -41,25 +42,19 @@ type ClientOptions struct {
 	// every node.
 	Address string
 
-	// HTTPTimeout (optional) configures how long underlying HTTP requests should
-	// wait before giving up and returning a timeout error. By default, this value
-	// is 10 seconds.
-	HTTPTimeout time.Duration
-
-	// SkipTLSVerification configures the underlying HTTP client to ignore
-	// any TLS certificate validation errors. This is a hacky option that can
-	// be useful for working in environments that are using self-signed
-	// certificates. For best security practices, this option should never
-	// be used in a production environment.
-	SkipTLSVerification bool
-
 	// Token (optional) will be used to authenticate requests to consul.
 	Token string
+
+	// HTTPClient (optional) is the underlying HTTP client to use for making
+	// requests to consul agents and servers. If not set, a default HTTP client
+	// is used with a default timeout of 10 seconds, and will keep connections
+	// open.
+	HTTPClient *http.Client
 
 	// Logger may be optionally configured as an output for trace level logging
 	// produced internally by the Client. This can be helpful for debugging logic
 	// errors in client code.
-	Logger *log.Logger
+	Logger loggy.Logger
 }
 
 // RequestError exposes the status code of a http request error
@@ -68,46 +63,45 @@ type RequestError struct {
 }
 
 func (h *RequestError) Error() string {
-	return fmt.Sprintf("bad status code: %d", h.statusCode)
+	return fmt.Sprintf("status code (%d)", h.statusCode)
 }
 
 func (h *RequestError) StatusCode() int {
 	return h.statusCode
 }
 
-// New creates a new Client that will connect to the configured consul
-// agent.
+// New creates a new Client that will use the provided ClientOptions for
+// making requests to a configured consul agent.
 func New(opts ClientOptions) Client {
-	if opts.Address == "" {
-		opts.Address = defaultAddress
+	address := opts.Address
+	if address == "" {
+		address = defaultAddress
 	}
 
-	if opts.HTTPTimeout <= 0 {
-		opts.HTTPTimeout = defaultTimeout
+	httpClient := opts.HTTPClient
+	if httpClient == nil {
+		httpClient = clean.DefaultPooledClient()
+		httpClient.Timeout = defaultTimeout
 	}
 
-	if opts.Logger == nil {
-		opts.Logger = log.New(ioutil.Discard, "", 0)
-	}
-
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: opts.SkipTLSVerification,
-		},
+	logger := opts.Logger
+	if logger == nil {
+		logger = loggy.Discard()
 	}
 
 	return &client{
-		opts: opts,
-		httpClient: &http.Client{
-			Transport: transport,
-			Timeout:   opts.HTTPTimeout,
-		},
+		address:    address,
+		token:      opts.Token,
+		httpClient: httpClient,
+		log:        logger,
 	}
 }
 
 type client struct {
-	opts       ClientOptions
+	address    string
+	token      string
 	httpClient *http.Client
+	log        loggy.Logger
 }
 
 // params are url param kv pairs
@@ -136,21 +130,30 @@ func param(key, value string) [2]string {
 	return [2]string{key, value}
 }
 
-func (c *client) get(path string, i interface{}) error {
-	completeURL := c.opts.Address + path
+func (c *client) newRequest(ctx Ctx, method, fullURL string, body io.Reader) (*http.Request, error) {
+	request, err := http.NewRequest(method, fullURL, body)
+	if err != nil {
+		return nil, err
+	}
+	rCtx := request.WithContext(ctx)
+	c.maybeSetToken(rCtx)
+	c.setHeaders(rCtx)
+	return rCtx, nil
+}
 
-	request, err := http.NewRequest(http.MethodGet, completeURL, nil)
+func (c *client) get(ctx Ctx, path string, i interface{}) error {
+	completeURL := c.address + path
+
+	request, err := c.newRequest(ctx, http.MethodGet, completeURL, nil)
 	if err != nil {
 		return err
 	}
-
-	c.maybeSetToken(request)
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
 		return err
 	}
-	defer toolkit.Drain(response.Body)
+	defer ignore.Drain(response.Body)
 
 	if response.StatusCode >= 400 {
 		return &RequestError{statusCode: response.StatusCode}
@@ -159,57 +162,67 @@ func (c *client) get(path string, i interface{}) error {
 	return json.NewDecoder(response.Body).Decode(i)
 }
 
-func (c *client) put(path, body string, i interface{}) error {
-	completeURL := c.opts.Address + path
+func (c *client) put(ctx Ctx, path, body string, i interface{}) error {
+	completeURL := c.address + path
 
-	request, err := http.NewRequest(http.MethodPut, completeURL, strings.NewReader(body))
+	r := strings.NewReader(body)
+	request, err := c.newRequest(ctx, http.MethodPut, completeURL, r)
 	if err != nil {
 		return err
 	}
-
-	c.maybeSetToken(request)
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
 		return err
 	}
+	defer ignore.Drain(response.Body)
 
 	if response.StatusCode >= 400 {
 		return &RequestError{statusCode: response.StatusCode}
 	}
 
 	if i != nil {
-		defer toolkit.Drain(response.Body)
 		return json.NewDecoder(response.Body).Decode(i)
 	}
 
 	return nil
 }
 
-func (c *client) delete(path string) error {
-	completeURL := c.opts.Address + path
+func (c *client) delete(ctx Ctx, path string) error {
+	completeURL := c.address + path
 
-	request, err := http.NewRequest(http.MethodDelete, completeURL, nil)
+	request, err := c.newRequest(ctx, http.MethodDelete, completeURL, nil)
 	if err != nil {
 		return err
 	}
-
-	c.maybeSetToken(request)
 
 	response, err := c.httpClient.Do(request)
 	if err != nil {
 		return err
 	}
-	// do not read response
+	defer ignore.Drain(response.Body)
 
 	if response.StatusCode >= 400 {
 		return &RequestError{statusCode: response.StatusCode}
 	}
+
 	return nil
 }
 
 func (c *client) maybeSetToken(request *http.Request) {
-	if c.opts.Token != "" {
-		request.Header.Set(consulTokenHeader, c.opts.Token)
+	if c.token != "" {
+		request.Header.Set(consulTokenHeader, c.token)
 	}
+}
+
+const (
+	headerContentType = "Content-Type"
+	headerUserAgent   = "User-Agent"
+	mimeJSON          = "application/json"
+	userAgent         = "consulapi/1.0"
+)
+
+func (c *client) setHeaders(request *http.Request) {
+	request.Header.Set(headerContentType, mimeJSON)
+	request.Header.Set(headerUserAgent, userAgent)
 }

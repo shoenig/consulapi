@@ -2,79 +2,84 @@ package consulapi
 
 import (
 	"context"
-	"fmt"
+	"io"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
-func Test_Client_LeadershipManager(t *testing.T) {
-	client := New(ClientOptions{})
-	defer cleanup(t, client)
-
-	f := func(context.Context) error {
-		fmt.Println("f was called")
-		return nil
-	}
-
-	t.Log("starting leadership manager")
-	manager, err := client.Participate(LeadershipConfig{
-		Key:         "service/test/leader",
-		Description: "my-leadership-session",
-		LockDelay:   5 * time.Second,
-		TTL:         10 * time.Second,
-	}, f)
-	require.NoError(t, err)
-
-	t.Log("created client")
-
-	time.Sleep(5 * time.Second)
-	t.Log("slept, abdicating")
-
-	err = manager.Abdicate()
-	require.NoError(t, err)
-
-	t.Log("exiting")
+type leadershipHandler struct {
+	t *testing.T
 }
 
-func Test_Client_LeadershipManager_3(t *testing.T) {
-	clients := []Client{
-		New(ClientOptions{}),
-		New(ClientOptions{}),
-		New(ClientOptions{}),
+func (lh *leadershipHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/v1/agent/self":
+		lh.rxSelf(w)
+	case "/v1/kv/my/key":
+		lh.rxMyKey(w)
+	case "/v1/session/create":
+		lh.rxCreate(w)
+	default:
+		lh.t.Fatal("unexpected path:", r.URL.Path)
 	}
+}
 
-	defer cleanup(t, clients[0])
-	defer cleanup(t, clients[1])
-	defer cleanup(t, clients[2])
+func (lh *leadershipHandler) rxSelf(w http.ResponseWriter) {
+	response := load(lh.t, "test_leadership_self.json")
+	_, _ = io.WriteString(w, response)
+}
 
-	f := func(context.Context) error {
-		fmt.Println("leadership starting")
-		time.Sleep(1 * time.Second)
-		fmt.Println("leadership exiting")
+func (lh *leadershipHandler) rxMyKey(w http.ResponseWriter) {
+	response := load(lh.t, "test_leadership_myKey.json")
+	_, _ = io.WriteString(w, response)
+}
+
+func (lh *leadershipHandler) rxCreate(w http.ResponseWriter) {
+	response := load(lh.t, "test_leadership_create.json")
+	_, _ = io.WriteString(w, response)
+}
+
+func Test_Leadership_Participate(t *testing.T) {
+
+	ctx, ts, client := testClient(&leadershipHandler{
+		t: t,
+	})
+	defer ts.Close()
+
+	var alf AsLeaderFunc = func(Ctx) error {
+		t.Log("this is as leader func")
 		return nil
 	}
 
-	lc := LeadershipConfig{
-		Key:         "service/test3/leader",
-		Description: "my-3-leadership-session",
-		LockDelay:   1 * time.Second,
-		TTL:         10 * time.Second,
+	session, err := client.Participate(ctx, LeadershipConfig{
+		Key:         "/my/key",
+		ContactInfo: "node1",
+		Description: "the session key",
+		LockDelay:   5 * time.Second,
+		TTL:         30 * time.Second,
+	}, alf)
+
+	require.NoError(t, err)
+	t.Log("session:", session)
+
+	current, err := session.Current(ctx)
+	require.NoError(t, err)
+	t.Log("current:", current)
+
+	// i only feel a little bad about this
+	for i := 0; wait(t, i, session); i++ {
+		time.Sleep(10 * time.Millisecond)
 	}
+}
 
-	lm1, err := clients[0].Participate(lc, f)
-	require.NoError(t, err)
-	lm2, err := clients[1].Participate(lc, f)
-	require.NoError(t, err)
-	lm3, err := clients[2].Participate(lc, f)
-	require.NoError(t, err)
+func wait(t *testing.T, i int, session LeaderSession) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
 
-	time.Sleep(2 * time.Second)
-
-	_ = lm1.Abdicate()
-	_ = lm2.Abdicate()
-	_ = lm3.Abdicate()
-
-	time.Sleep(4 * time.Second)
+	id := session.SessionID(ctx)
+	t.Logf("waiting for session [%d]: %s", i, id)
+	return id == ""
 }

@@ -7,14 +7,15 @@ import (
 	mm_atomic "sync/atomic"
 	mm_time "time"
 
-	"github.com/gojuno/minimock"
+	"github.com/gojuno/minimock/v3"
 )
 
 // CandidateMock implements Candidate
 type CandidateMock struct {
 	t minimock.Tester
 
-	funcParticipate          func(l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error)
+	funcParticipate          func(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error)
+	inspectFuncParticipate   func(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc)
 	afterParticipateCounter  uint64
 	beforeParticipateCounter uint64
 	ParticipateMock          mCandidateMockParticipate
@@ -52,6 +53,7 @@ type CandidateMockParticipateExpectation struct {
 
 // CandidateMockParticipateParams contains parameters of the Candidate.Participate
 type CandidateMockParticipateParams struct {
+	c1 Ctx
 	l1 LeadershipConfig
 	a1 AsLeaderFunc
 }
@@ -63,7 +65,7 @@ type CandidateMockParticipateResults struct {
 }
 
 // Expect sets up expected params for Candidate.Participate
-func (mmParticipate *mCandidateMockParticipate) Expect(l1 LeadershipConfig, a1 AsLeaderFunc) *mCandidateMockParticipate {
+func (mmParticipate *mCandidateMockParticipate) Expect(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc) *mCandidateMockParticipate {
 	if mmParticipate.mock.funcParticipate != nil {
 		mmParticipate.mock.t.Fatalf("CandidateMock.Participate mock is already set by Set")
 	}
@@ -72,12 +74,23 @@ func (mmParticipate *mCandidateMockParticipate) Expect(l1 LeadershipConfig, a1 A
 		mmParticipate.defaultExpectation = &CandidateMockParticipateExpectation{}
 	}
 
-	mmParticipate.defaultExpectation.params = &CandidateMockParticipateParams{l1, a1}
+	mmParticipate.defaultExpectation.params = &CandidateMockParticipateParams{c1, l1, a1}
 	for _, e := range mmParticipate.expectations {
 		if minimock.Equal(e.params, mmParticipate.defaultExpectation.params) {
 			mmParticipate.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmParticipate.defaultExpectation.params)
 		}
 	}
+
+	return mmParticipate
+}
+
+// Inspect accepts an inspector function that has same arguments as the Candidate.Participate
+func (mmParticipate *mCandidateMockParticipate) Inspect(f func(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc)) *mCandidateMockParticipate {
+	if mmParticipate.mock.inspectFuncParticipate != nil {
+		mmParticipate.mock.t.Fatalf("Inspect function is already set for CandidateMock.Participate")
+	}
+
+	mmParticipate.mock.inspectFuncParticipate = f
 
 	return mmParticipate
 }
@@ -96,7 +109,7 @@ func (mmParticipate *mCandidateMockParticipate) Return(l2 LeaderSession, err err
 }
 
 //Set uses given function f to mock the Candidate.Participate method
-func (mmParticipate *mCandidateMockParticipate) Set(f func(l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error)) *CandidateMock {
+func (mmParticipate *mCandidateMockParticipate) Set(f func(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error)) *CandidateMock {
 	if mmParticipate.defaultExpectation != nil {
 		mmParticipate.mock.t.Fatalf("Default expectation is already set for the Candidate.Participate method")
 	}
@@ -111,14 +124,14 @@ func (mmParticipate *mCandidateMockParticipate) Set(f func(l1 LeadershipConfig, 
 
 // When sets expectation for the Candidate.Participate which will trigger the result defined by the following
 // Then helper
-func (mmParticipate *mCandidateMockParticipate) When(l1 LeadershipConfig, a1 AsLeaderFunc) *CandidateMockParticipateExpectation {
+func (mmParticipate *mCandidateMockParticipate) When(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc) *CandidateMockParticipateExpectation {
 	if mmParticipate.mock.funcParticipate != nil {
 		mmParticipate.mock.t.Fatalf("CandidateMock.Participate mock is already set by Set")
 	}
 
 	expectation := &CandidateMockParticipateExpectation{
 		mock:   mmParticipate.mock,
-		params: &CandidateMockParticipateParams{l1, a1},
+		params: &CandidateMockParticipateParams{c1, l1, a1},
 	}
 	mmParticipate.expectations = append(mmParticipate.expectations, expectation)
 	return expectation
@@ -131,19 +144,23 @@ func (e *CandidateMockParticipateExpectation) Then(l2 LeaderSession, err error) 
 }
 
 // Participate implements Candidate
-func (mmParticipate *CandidateMock) Participate(l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error) {
+func (mmParticipate *CandidateMock) Participate(c1 Ctx, l1 LeadershipConfig, a1 AsLeaderFunc) (l2 LeaderSession, err error) {
 	mm_atomic.AddUint64(&mmParticipate.beforeParticipateCounter, 1)
 	defer mm_atomic.AddUint64(&mmParticipate.afterParticipateCounter, 1)
 
-	params := &CandidateMockParticipateParams{l1, a1}
+	if mmParticipate.inspectFuncParticipate != nil {
+		mmParticipate.inspectFuncParticipate(c1, l1, a1)
+	}
+
+	mm_params := &CandidateMockParticipateParams{c1, l1, a1}
 
 	// Record call args
 	mmParticipate.ParticipateMock.mutex.Lock()
-	mmParticipate.ParticipateMock.callArgs = append(mmParticipate.ParticipateMock.callArgs, params)
+	mmParticipate.ParticipateMock.callArgs = append(mmParticipate.ParticipateMock.callArgs, mm_params)
 	mmParticipate.ParticipateMock.mutex.Unlock()
 
 	for _, e := range mmParticipate.ParticipateMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.l2, e.results.err
 		}
@@ -151,22 +168,22 @@ func (mmParticipate *CandidateMock) Participate(l1 LeadershipConfig, a1 AsLeader
 
 	if mmParticipate.ParticipateMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmParticipate.ParticipateMock.defaultExpectation.Counter, 1)
-		want := mmParticipate.ParticipateMock.defaultExpectation.params
-		got := CandidateMockParticipateParams{l1, a1}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmParticipate.t.Errorf("CandidateMock.Participate got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmParticipate.ParticipateMock.defaultExpectation.params
+		mm_got := CandidateMockParticipateParams{c1, l1, a1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmParticipate.t.Errorf("CandidateMock.Participate got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmParticipate.ParticipateMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmParticipate.ParticipateMock.defaultExpectation.results
+		if mm_results == nil {
 			mmParticipate.t.Fatal("No results are set for the CandidateMock.Participate")
 		}
-		return (*results).l2, (*results).err
+		return (*mm_results).l2, (*mm_results).err
 	}
 	if mmParticipate.funcParticipate != nil {
-		return mmParticipate.funcParticipate(l1, a1)
+		return mmParticipate.funcParticipate(c1, l1, a1)
 	}
-	mmParticipate.t.Fatalf("Unexpected call to CandidateMock.Participate. %v %v", l1, a1)
+	mmParticipate.t.Fatalf("Unexpected call to CandidateMock.Participate. %v %v %v", c1, l1, a1)
 	return
 }
 

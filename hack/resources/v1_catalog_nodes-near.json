@@ -1,0 +1,41 @@
+[
+  {
+    "ID": "40e4a748-2192-161a-0510-9bf59fe950b5",
+    "Node": "dc1-node1",
+    "Address": "10.0.0.1",
+    "Datacenter": "dc1",
+    "TaggedAddresses": {
+      "lan": "10.0.0.1",
+      "wan": "1.1.1.1"
+    },
+    "Meta": {
+      "instance_type": "t2.medium"
+    }
+  },
+  {
+    "ID": "8f246b77-f3e1-ff88-5b48-8ec93abf3e05",
+    "Node": "dc1-node2",
+    "Address": "10.0.0.2",
+    "Datacenter": "dc1",
+    "TaggedAddresses": {
+      "lan": "10.0.0.2",
+      "wan": "1.1.1.2"
+    },
+    "Meta": {
+      "instance_type": "t2.large"
+    }
+  },
+  {
+    "ID": "4939104-f4e2-ee88-5b48-9ec93abf3c06",
+    "Node": "dc2-node1",
+    "Address": "10.0.1.1",
+    "Datacenter": "dc2",
+    "TaggedAddresses": {
+      "lan": "10.0.1.1",
+      "wan": "1.1.1.3"
+    },
+    "Meta": {
+      "instance_type": "t2.large"
+    }
+  }
+]

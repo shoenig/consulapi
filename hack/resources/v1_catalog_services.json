@@ -1,0 +1,21 @@
+{
+  "myapp": [],
+  "vault": [
+    "standby",
+    "active"
+  ],
+  "otherapp": [
+    "meta=PORT0=31668",
+    "meta=PORT5=31673",
+    "meta=PORT3=31671",
+    "meta=PORT2=31670",
+    "meta=PORT4=31672",
+    "meta=PORT1=31669",
+    "meta=PORT7=31675",
+    "meta=PORT6=31674"
+  ],
+  "zookeeper": [
+    "foo-infra",
+    "bar-infra"
+  ]
+}

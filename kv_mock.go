@@ -7,34 +7,39 @@ import (
 	mm_atomic "sync/atomic"
 	mm_time "time"
 
-	"github.com/gojuno/minimock"
+	"github.com/gojuno/minimock/v3"
 )
 
 // KVMock implements KV
 type KVMock struct {
 	t minimock.Tester
 
-	funcDelete          func(dc string, path string) (err error)
+	funcDelete          func(c1 Ctx, s1 string, q1 Query) (err error)
+	inspectFuncDelete   func(c1 Ctx, s1 string, q1 Query)
 	afterDeleteCounter  uint64
 	beforeDeleteCounter uint64
 	DeleteMock          mKVMockDelete
 
-	funcGet          func(dc string, path string) (s1 string, err error)
+	funcGet          func(c1 Ctx, s1 string, q1 Query) (s2 string, err error)
+	inspectFuncGet   func(c1 Ctx, s1 string, q1 Query)
 	afterGetCounter  uint64
 	beforeGetCounter uint64
 	GetMock          mKVMockGet
 
-	funcKeys          func(dc string, path string) (sa1 []string, err error)
+	funcKeys          func(c1 Ctx, s1 string, q1 Query) (sa1 []string, err error)
+	inspectFuncKeys   func(c1 Ctx, s1 string, q1 Query)
 	afterKeysCounter  uint64
 	beforeKeysCounter uint64
 	KeysMock          mKVMockKeys
 
-	funcPut          func(dc string, path string, value string) (err error)
+	funcPut          func(c1 Ctx, s1 string, s2 string, q1 Query) (err error)
+	inspectFuncPut   func(c1 Ctx, s1 string, s2 string, q1 Query)
 	afterPutCounter  uint64
 	beforePutCounter uint64
 	PutMock          mKVMockPut
 
-	funcRecurse          func(dc string, path string) (saa1 [][2]string, err error)
+	funcRecurse          func(c1 Ctx, s1 string, q1 Query) (pa1 []Pair, err error)
+	inspectFuncRecurse   func(c1 Ctx, s1 string, q1 Query)
 	afterRecurseCounter  uint64
 	beforeRecurseCounter uint64
 	RecurseMock          mKVMockRecurse
@@ -84,8 +89,9 @@ type KVMockDeleteExpectation struct {
 
 // KVMockDeleteParams contains parameters of the KV.Delete
 type KVMockDeleteParams struct {
-	dc   string
-	path string
+	c1 Ctx
+	s1 string
+	q1 Query
 }
 
 // KVMockDeleteResults contains results of the KV.Delete
@@ -94,7 +100,7 @@ type KVMockDeleteResults struct {
 }
 
 // Expect sets up expected params for KV.Delete
-func (mmDelete *mKVMockDelete) Expect(dc string, path string) *mKVMockDelete {
+func (mmDelete *mKVMockDelete) Expect(c1 Ctx, s1 string, q1 Query) *mKVMockDelete {
 	if mmDelete.mock.funcDelete != nil {
 		mmDelete.mock.t.Fatalf("KVMock.Delete mock is already set by Set")
 	}
@@ -103,12 +109,23 @@ func (mmDelete *mKVMockDelete) Expect(dc string, path string) *mKVMockDelete {
 		mmDelete.defaultExpectation = &KVMockDeleteExpectation{}
 	}
 
-	mmDelete.defaultExpectation.params = &KVMockDeleteParams{dc, path}
+	mmDelete.defaultExpectation.params = &KVMockDeleteParams{c1, s1, q1}
 	for _, e := range mmDelete.expectations {
 		if minimock.Equal(e.params, mmDelete.defaultExpectation.params) {
 			mmDelete.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmDelete.defaultExpectation.params)
 		}
 	}
+
+	return mmDelete
+}
+
+// Inspect accepts an inspector function that has same arguments as the KV.Delete
+func (mmDelete *mKVMockDelete) Inspect(f func(c1 Ctx, s1 string, q1 Query)) *mKVMockDelete {
+	if mmDelete.mock.inspectFuncDelete != nil {
+		mmDelete.mock.t.Fatalf("Inspect function is already set for KVMock.Delete")
+	}
+
+	mmDelete.mock.inspectFuncDelete = f
 
 	return mmDelete
 }
@@ -127,7 +144,7 @@ func (mmDelete *mKVMockDelete) Return(err error) *KVMock {
 }
 
 //Set uses given function f to mock the KV.Delete method
-func (mmDelete *mKVMockDelete) Set(f func(dc string, path string) (err error)) *KVMock {
+func (mmDelete *mKVMockDelete) Set(f func(c1 Ctx, s1 string, q1 Query) (err error)) *KVMock {
 	if mmDelete.defaultExpectation != nil {
 		mmDelete.mock.t.Fatalf("Default expectation is already set for the KV.Delete method")
 	}
@@ -142,14 +159,14 @@ func (mmDelete *mKVMockDelete) Set(f func(dc string, path string) (err error)) *
 
 // When sets expectation for the KV.Delete which will trigger the result defined by the following
 // Then helper
-func (mmDelete *mKVMockDelete) When(dc string, path string) *KVMockDeleteExpectation {
+func (mmDelete *mKVMockDelete) When(c1 Ctx, s1 string, q1 Query) *KVMockDeleteExpectation {
 	if mmDelete.mock.funcDelete != nil {
 		mmDelete.mock.t.Fatalf("KVMock.Delete mock is already set by Set")
 	}
 
 	expectation := &KVMockDeleteExpectation{
 		mock:   mmDelete.mock,
-		params: &KVMockDeleteParams{dc, path},
+		params: &KVMockDeleteParams{c1, s1, q1},
 	}
 	mmDelete.expectations = append(mmDelete.expectations, expectation)
 	return expectation
@@ -162,19 +179,23 @@ func (e *KVMockDeleteExpectation) Then(err error) *KVMock {
 }
 
 // Delete implements KV
-func (mmDelete *KVMock) Delete(dc string, path string) (err error) {
+func (mmDelete *KVMock) Delete(c1 Ctx, s1 string, q1 Query) (err error) {
 	mm_atomic.AddUint64(&mmDelete.beforeDeleteCounter, 1)
 	defer mm_atomic.AddUint64(&mmDelete.afterDeleteCounter, 1)
 
-	params := &KVMockDeleteParams{dc, path}
+	if mmDelete.inspectFuncDelete != nil {
+		mmDelete.inspectFuncDelete(c1, s1, q1)
+	}
+
+	mm_params := &KVMockDeleteParams{c1, s1, q1}
 
 	// Record call args
 	mmDelete.DeleteMock.mutex.Lock()
-	mmDelete.DeleteMock.callArgs = append(mmDelete.DeleteMock.callArgs, params)
+	mmDelete.DeleteMock.callArgs = append(mmDelete.DeleteMock.callArgs, mm_params)
 	mmDelete.DeleteMock.mutex.Unlock()
 
 	for _, e := range mmDelete.DeleteMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.err
 		}
@@ -182,22 +203,22 @@ func (mmDelete *KVMock) Delete(dc string, path string) (err error) {
 
 	if mmDelete.DeleteMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmDelete.DeleteMock.defaultExpectation.Counter, 1)
-		want := mmDelete.DeleteMock.defaultExpectation.params
-		got := KVMockDeleteParams{dc, path}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmDelete.t.Errorf("KVMock.Delete got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmDelete.DeleteMock.defaultExpectation.params
+		mm_got := KVMockDeleteParams{c1, s1, q1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmDelete.t.Errorf("KVMock.Delete got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmDelete.DeleteMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmDelete.DeleteMock.defaultExpectation.results
+		if mm_results == nil {
 			mmDelete.t.Fatal("No results are set for the KVMock.Delete")
 		}
-		return (*results).err
+		return (*mm_results).err
 	}
 	if mmDelete.funcDelete != nil {
-		return mmDelete.funcDelete(dc, path)
+		return mmDelete.funcDelete(c1, s1, q1)
 	}
-	mmDelete.t.Fatalf("Unexpected call to KVMock.Delete. %v %v", dc, path)
+	mmDelete.t.Fatalf("Unexpected call to KVMock.Delete. %v %v %v", c1, s1, q1)
 	return
 }
 
@@ -285,18 +306,19 @@ type KVMockGetExpectation struct {
 
 // KVMockGetParams contains parameters of the KV.Get
 type KVMockGetParams struct {
-	dc   string
-	path string
+	c1 Ctx
+	s1 string
+	q1 Query
 }
 
 // KVMockGetResults contains results of the KV.Get
 type KVMockGetResults struct {
-	s1  string
+	s2  string
 	err error
 }
 
 // Expect sets up expected params for KV.Get
-func (mmGet *mKVMockGet) Expect(dc string, path string) *mKVMockGet {
+func (mmGet *mKVMockGet) Expect(c1 Ctx, s1 string, q1 Query) *mKVMockGet {
 	if mmGet.mock.funcGet != nil {
 		mmGet.mock.t.Fatalf("KVMock.Get mock is already set by Set")
 	}
@@ -305,7 +327,7 @@ func (mmGet *mKVMockGet) Expect(dc string, path string) *mKVMockGet {
 		mmGet.defaultExpectation = &KVMockGetExpectation{}
 	}
 
-	mmGet.defaultExpectation.params = &KVMockGetParams{dc, path}
+	mmGet.defaultExpectation.params = &KVMockGetParams{c1, s1, q1}
 	for _, e := range mmGet.expectations {
 		if minimock.Equal(e.params, mmGet.defaultExpectation.params) {
 			mmGet.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmGet.defaultExpectation.params)
@@ -315,8 +337,19 @@ func (mmGet *mKVMockGet) Expect(dc string, path string) *mKVMockGet {
 	return mmGet
 }
 
+// Inspect accepts an inspector function that has same arguments as the KV.Get
+func (mmGet *mKVMockGet) Inspect(f func(c1 Ctx, s1 string, q1 Query)) *mKVMockGet {
+	if mmGet.mock.inspectFuncGet != nil {
+		mmGet.mock.t.Fatalf("Inspect function is already set for KVMock.Get")
+	}
+
+	mmGet.mock.inspectFuncGet = f
+
+	return mmGet
+}
+
 // Return sets up results that will be returned by KV.Get
-func (mmGet *mKVMockGet) Return(s1 string, err error) *KVMock {
+func (mmGet *mKVMockGet) Return(s2 string, err error) *KVMock {
 	if mmGet.mock.funcGet != nil {
 		mmGet.mock.t.Fatalf("KVMock.Get mock is already set by Set")
 	}
@@ -324,12 +357,12 @@ func (mmGet *mKVMockGet) Return(s1 string, err error) *KVMock {
 	if mmGet.defaultExpectation == nil {
 		mmGet.defaultExpectation = &KVMockGetExpectation{mock: mmGet.mock}
 	}
-	mmGet.defaultExpectation.results = &KVMockGetResults{s1, err}
+	mmGet.defaultExpectation.results = &KVMockGetResults{s2, err}
 	return mmGet.mock
 }
 
 //Set uses given function f to mock the KV.Get method
-func (mmGet *mKVMockGet) Set(f func(dc string, path string) (s1 string, err error)) *KVMock {
+func (mmGet *mKVMockGet) Set(f func(c1 Ctx, s1 string, q1 Query) (s2 string, err error)) *KVMock {
 	if mmGet.defaultExpectation != nil {
 		mmGet.mock.t.Fatalf("Default expectation is already set for the KV.Get method")
 	}
@@ -344,62 +377,66 @@ func (mmGet *mKVMockGet) Set(f func(dc string, path string) (s1 string, err erro
 
 // When sets expectation for the KV.Get which will trigger the result defined by the following
 // Then helper
-func (mmGet *mKVMockGet) When(dc string, path string) *KVMockGetExpectation {
+func (mmGet *mKVMockGet) When(c1 Ctx, s1 string, q1 Query) *KVMockGetExpectation {
 	if mmGet.mock.funcGet != nil {
 		mmGet.mock.t.Fatalf("KVMock.Get mock is already set by Set")
 	}
 
 	expectation := &KVMockGetExpectation{
 		mock:   mmGet.mock,
-		params: &KVMockGetParams{dc, path},
+		params: &KVMockGetParams{c1, s1, q1},
 	}
 	mmGet.expectations = append(mmGet.expectations, expectation)
 	return expectation
 }
 
 // Then sets up KV.Get return parameters for the expectation previously defined by the When method
-func (e *KVMockGetExpectation) Then(s1 string, err error) *KVMock {
-	e.results = &KVMockGetResults{s1, err}
+func (e *KVMockGetExpectation) Then(s2 string, err error) *KVMock {
+	e.results = &KVMockGetResults{s2, err}
 	return e.mock
 }
 
 // Get implements KV
-func (mmGet *KVMock) Get(dc string, path string) (s1 string, err error) {
+func (mmGet *KVMock) Get(c1 Ctx, s1 string, q1 Query) (s2 string, err error) {
 	mm_atomic.AddUint64(&mmGet.beforeGetCounter, 1)
 	defer mm_atomic.AddUint64(&mmGet.afterGetCounter, 1)
 
-	params := &KVMockGetParams{dc, path}
+	if mmGet.inspectFuncGet != nil {
+		mmGet.inspectFuncGet(c1, s1, q1)
+	}
+
+	mm_params := &KVMockGetParams{c1, s1, q1}
 
 	// Record call args
 	mmGet.GetMock.mutex.Lock()
-	mmGet.GetMock.callArgs = append(mmGet.GetMock.callArgs, params)
+	mmGet.GetMock.callArgs = append(mmGet.GetMock.callArgs, mm_params)
 	mmGet.GetMock.mutex.Unlock()
 
 	for _, e := range mmGet.GetMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.s1, e.results.err
+			return e.results.s2, e.results.err
 		}
 	}
 
 	if mmGet.GetMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmGet.GetMock.defaultExpectation.Counter, 1)
-		want := mmGet.GetMock.defaultExpectation.params
-		got := KVMockGetParams{dc, path}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmGet.t.Errorf("KVMock.Get got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmGet.GetMock.defaultExpectation.params
+		mm_got := KVMockGetParams{c1, s1, q1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmGet.t.Errorf("KVMock.Get got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmGet.GetMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmGet.GetMock.defaultExpectation.results
+		if mm_results == nil {
 			mmGet.t.Fatal("No results are set for the KVMock.Get")
 		}
-		return (*results).s1, (*results).err
+		return (*mm_results).s2, (*mm_results).err
 	}
 	if mmGet.funcGet != nil {
-		return mmGet.funcGet(dc, path)
+		return mmGet.funcGet(c1, s1, q1)
 	}
-	mmGet.t.Fatalf("Unexpected call to KVMock.Get. %v %v", dc, path)
+	mmGet.t.Fatalf("Unexpected call to KVMock.Get. %v %v %v", c1, s1, q1)
 	return
 }
 
@@ -487,8 +524,9 @@ type KVMockKeysExpectation struct {
 
 // KVMockKeysParams contains parameters of the KV.Keys
 type KVMockKeysParams struct {
-	dc   string
-	path string
+	c1 Ctx
+	s1 string
+	q1 Query
 }
 
 // KVMockKeysResults contains results of the KV.Keys
@@ -498,7 +536,7 @@ type KVMockKeysResults struct {
 }
 
 // Expect sets up expected params for KV.Keys
-func (mmKeys *mKVMockKeys) Expect(dc string, path string) *mKVMockKeys {
+func (mmKeys *mKVMockKeys) Expect(c1 Ctx, s1 string, q1 Query) *mKVMockKeys {
 	if mmKeys.mock.funcKeys != nil {
 		mmKeys.mock.t.Fatalf("KVMock.Keys mock is already set by Set")
 	}
@@ -507,12 +545,23 @@ func (mmKeys *mKVMockKeys) Expect(dc string, path string) *mKVMockKeys {
 		mmKeys.defaultExpectation = &KVMockKeysExpectation{}
 	}
 
-	mmKeys.defaultExpectation.params = &KVMockKeysParams{dc, path}
+	mmKeys.defaultExpectation.params = &KVMockKeysParams{c1, s1, q1}
 	for _, e := range mmKeys.expectations {
 		if minimock.Equal(e.params, mmKeys.defaultExpectation.params) {
 			mmKeys.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmKeys.defaultExpectation.params)
 		}
 	}
+
+	return mmKeys
+}
+
+// Inspect accepts an inspector function that has same arguments as the KV.Keys
+func (mmKeys *mKVMockKeys) Inspect(f func(c1 Ctx, s1 string, q1 Query)) *mKVMockKeys {
+	if mmKeys.mock.inspectFuncKeys != nil {
+		mmKeys.mock.t.Fatalf("Inspect function is already set for KVMock.Keys")
+	}
+
+	mmKeys.mock.inspectFuncKeys = f
 
 	return mmKeys
 }
@@ -531,7 +580,7 @@ func (mmKeys *mKVMockKeys) Return(sa1 []string, err error) *KVMock {
 }
 
 //Set uses given function f to mock the KV.Keys method
-func (mmKeys *mKVMockKeys) Set(f func(dc string, path string) (sa1 []string, err error)) *KVMock {
+func (mmKeys *mKVMockKeys) Set(f func(c1 Ctx, s1 string, q1 Query) (sa1 []string, err error)) *KVMock {
 	if mmKeys.defaultExpectation != nil {
 		mmKeys.mock.t.Fatalf("Default expectation is already set for the KV.Keys method")
 	}
@@ -546,14 +595,14 @@ func (mmKeys *mKVMockKeys) Set(f func(dc string, path string) (sa1 []string, err
 
 // When sets expectation for the KV.Keys which will trigger the result defined by the following
 // Then helper
-func (mmKeys *mKVMockKeys) When(dc string, path string) *KVMockKeysExpectation {
+func (mmKeys *mKVMockKeys) When(c1 Ctx, s1 string, q1 Query) *KVMockKeysExpectation {
 	if mmKeys.mock.funcKeys != nil {
 		mmKeys.mock.t.Fatalf("KVMock.Keys mock is already set by Set")
 	}
 
 	expectation := &KVMockKeysExpectation{
 		mock:   mmKeys.mock,
-		params: &KVMockKeysParams{dc, path},
+		params: &KVMockKeysParams{c1, s1, q1},
 	}
 	mmKeys.expectations = append(mmKeys.expectations, expectation)
 	return expectation
@@ -566,19 +615,23 @@ func (e *KVMockKeysExpectation) Then(sa1 []string, err error) *KVMock {
 }
 
 // Keys implements KV
-func (mmKeys *KVMock) Keys(dc string, path string) (sa1 []string, err error) {
+func (mmKeys *KVMock) Keys(c1 Ctx, s1 string, q1 Query) (sa1 []string, err error) {
 	mm_atomic.AddUint64(&mmKeys.beforeKeysCounter, 1)
 	defer mm_atomic.AddUint64(&mmKeys.afterKeysCounter, 1)
 
-	params := &KVMockKeysParams{dc, path}
+	if mmKeys.inspectFuncKeys != nil {
+		mmKeys.inspectFuncKeys(c1, s1, q1)
+	}
+
+	mm_params := &KVMockKeysParams{c1, s1, q1}
 
 	// Record call args
 	mmKeys.KeysMock.mutex.Lock()
-	mmKeys.KeysMock.callArgs = append(mmKeys.KeysMock.callArgs, params)
+	mmKeys.KeysMock.callArgs = append(mmKeys.KeysMock.callArgs, mm_params)
 	mmKeys.KeysMock.mutex.Unlock()
 
 	for _, e := range mmKeys.KeysMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.sa1, e.results.err
 		}
@@ -586,22 +639,22 @@ func (mmKeys *KVMock) Keys(dc string, path string) (sa1 []string, err error) {
 
 	if mmKeys.KeysMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmKeys.KeysMock.defaultExpectation.Counter, 1)
-		want := mmKeys.KeysMock.defaultExpectation.params
-		got := KVMockKeysParams{dc, path}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmKeys.t.Errorf("KVMock.Keys got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmKeys.KeysMock.defaultExpectation.params
+		mm_got := KVMockKeysParams{c1, s1, q1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmKeys.t.Errorf("KVMock.Keys got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmKeys.KeysMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmKeys.KeysMock.defaultExpectation.results
+		if mm_results == nil {
 			mmKeys.t.Fatal("No results are set for the KVMock.Keys")
 		}
-		return (*results).sa1, (*results).err
+		return (*mm_results).sa1, (*mm_results).err
 	}
 	if mmKeys.funcKeys != nil {
-		return mmKeys.funcKeys(dc, path)
+		return mmKeys.funcKeys(c1, s1, q1)
 	}
-	mmKeys.t.Fatalf("Unexpected call to KVMock.Keys. %v %v", dc, path)
+	mmKeys.t.Fatalf("Unexpected call to KVMock.Keys. %v %v %v", c1, s1, q1)
 	return
 }
 
@@ -689,9 +742,10 @@ type KVMockPutExpectation struct {
 
 // KVMockPutParams contains parameters of the KV.Put
 type KVMockPutParams struct {
-	dc    string
-	path  string
-	value string
+	c1 Ctx
+	s1 string
+	s2 string
+	q1 Query
 }
 
 // KVMockPutResults contains results of the KV.Put
@@ -700,7 +754,7 @@ type KVMockPutResults struct {
 }
 
 // Expect sets up expected params for KV.Put
-func (mmPut *mKVMockPut) Expect(dc string, path string, value string) *mKVMockPut {
+func (mmPut *mKVMockPut) Expect(c1 Ctx, s1 string, s2 string, q1 Query) *mKVMockPut {
 	if mmPut.mock.funcPut != nil {
 		mmPut.mock.t.Fatalf("KVMock.Put mock is already set by Set")
 	}
@@ -709,12 +763,23 @@ func (mmPut *mKVMockPut) Expect(dc string, path string, value string) *mKVMockPu
 		mmPut.defaultExpectation = &KVMockPutExpectation{}
 	}
 
-	mmPut.defaultExpectation.params = &KVMockPutParams{dc, path, value}
+	mmPut.defaultExpectation.params = &KVMockPutParams{c1, s1, s2, q1}
 	for _, e := range mmPut.expectations {
 		if minimock.Equal(e.params, mmPut.defaultExpectation.params) {
 			mmPut.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmPut.defaultExpectation.params)
 		}
 	}
+
+	return mmPut
+}
+
+// Inspect accepts an inspector function that has same arguments as the KV.Put
+func (mmPut *mKVMockPut) Inspect(f func(c1 Ctx, s1 string, s2 string, q1 Query)) *mKVMockPut {
+	if mmPut.mock.inspectFuncPut != nil {
+		mmPut.mock.t.Fatalf("Inspect function is already set for KVMock.Put")
+	}
+
+	mmPut.mock.inspectFuncPut = f
 
 	return mmPut
 }
@@ -733,7 +798,7 @@ func (mmPut *mKVMockPut) Return(err error) *KVMock {
 }
 
 //Set uses given function f to mock the KV.Put method
-func (mmPut *mKVMockPut) Set(f func(dc string, path string, value string) (err error)) *KVMock {
+func (mmPut *mKVMockPut) Set(f func(c1 Ctx, s1 string, s2 string, q1 Query) (err error)) *KVMock {
 	if mmPut.defaultExpectation != nil {
 		mmPut.mock.t.Fatalf("Default expectation is already set for the KV.Put method")
 	}
@@ -748,14 +813,14 @@ func (mmPut *mKVMockPut) Set(f func(dc string, path string, value string) (err e
 
 // When sets expectation for the KV.Put which will trigger the result defined by the following
 // Then helper
-func (mmPut *mKVMockPut) When(dc string, path string, value string) *KVMockPutExpectation {
+func (mmPut *mKVMockPut) When(c1 Ctx, s1 string, s2 string, q1 Query) *KVMockPutExpectation {
 	if mmPut.mock.funcPut != nil {
 		mmPut.mock.t.Fatalf("KVMock.Put mock is already set by Set")
 	}
 
 	expectation := &KVMockPutExpectation{
 		mock:   mmPut.mock,
-		params: &KVMockPutParams{dc, path, value},
+		params: &KVMockPutParams{c1, s1, s2, q1},
 	}
 	mmPut.expectations = append(mmPut.expectations, expectation)
 	return expectation
@@ -768,19 +833,23 @@ func (e *KVMockPutExpectation) Then(err error) *KVMock {
 }
 
 // Put implements KV
-func (mmPut *KVMock) Put(dc string, path string, value string) (err error) {
+func (mmPut *KVMock) Put(c1 Ctx, s1 string, s2 string, q1 Query) (err error) {
 	mm_atomic.AddUint64(&mmPut.beforePutCounter, 1)
 	defer mm_atomic.AddUint64(&mmPut.afterPutCounter, 1)
 
-	params := &KVMockPutParams{dc, path, value}
+	if mmPut.inspectFuncPut != nil {
+		mmPut.inspectFuncPut(c1, s1, s2, q1)
+	}
+
+	mm_params := &KVMockPutParams{c1, s1, s2, q1}
 
 	// Record call args
 	mmPut.PutMock.mutex.Lock()
-	mmPut.PutMock.callArgs = append(mmPut.PutMock.callArgs, params)
+	mmPut.PutMock.callArgs = append(mmPut.PutMock.callArgs, mm_params)
 	mmPut.PutMock.mutex.Unlock()
 
 	for _, e := range mmPut.PutMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.err
 		}
@@ -788,22 +857,22 @@ func (mmPut *KVMock) Put(dc string, path string, value string) (err error) {
 
 	if mmPut.PutMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmPut.PutMock.defaultExpectation.Counter, 1)
-		want := mmPut.PutMock.defaultExpectation.params
-		got := KVMockPutParams{dc, path, value}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmPut.t.Errorf("KVMock.Put got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmPut.PutMock.defaultExpectation.params
+		mm_got := KVMockPutParams{c1, s1, s2, q1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmPut.t.Errorf("KVMock.Put got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmPut.PutMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmPut.PutMock.defaultExpectation.results
+		if mm_results == nil {
 			mmPut.t.Fatal("No results are set for the KVMock.Put")
 		}
-		return (*results).err
+		return (*mm_results).err
 	}
 	if mmPut.funcPut != nil {
-		return mmPut.funcPut(dc, path, value)
+		return mmPut.funcPut(c1, s1, s2, q1)
 	}
-	mmPut.t.Fatalf("Unexpected call to KVMock.Put. %v %v %v", dc, path, value)
+	mmPut.t.Fatalf("Unexpected call to KVMock.Put. %v %v %v %v", c1, s1, s2, q1)
 	return
 }
 
@@ -891,18 +960,19 @@ type KVMockRecurseExpectation struct {
 
 // KVMockRecurseParams contains parameters of the KV.Recurse
 type KVMockRecurseParams struct {
-	dc   string
-	path string
+	c1 Ctx
+	s1 string
+	q1 Query
 }
 
 // KVMockRecurseResults contains results of the KV.Recurse
 type KVMockRecurseResults struct {
-	saa1 [][2]string
-	err  error
+	pa1 []Pair
+	err error
 }
 
 // Expect sets up expected params for KV.Recurse
-func (mmRecurse *mKVMockRecurse) Expect(dc string, path string) *mKVMockRecurse {
+func (mmRecurse *mKVMockRecurse) Expect(c1 Ctx, s1 string, q1 Query) *mKVMockRecurse {
 	if mmRecurse.mock.funcRecurse != nil {
 		mmRecurse.mock.t.Fatalf("KVMock.Recurse mock is already set by Set")
 	}
@@ -911,7 +981,7 @@ func (mmRecurse *mKVMockRecurse) Expect(dc string, path string) *mKVMockRecurse 
 		mmRecurse.defaultExpectation = &KVMockRecurseExpectation{}
 	}
 
-	mmRecurse.defaultExpectation.params = &KVMockRecurseParams{dc, path}
+	mmRecurse.defaultExpectation.params = &KVMockRecurseParams{c1, s1, q1}
 	for _, e := range mmRecurse.expectations {
 		if minimock.Equal(e.params, mmRecurse.defaultExpectation.params) {
 			mmRecurse.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmRecurse.defaultExpectation.params)
@@ -921,8 +991,19 @@ func (mmRecurse *mKVMockRecurse) Expect(dc string, path string) *mKVMockRecurse 
 	return mmRecurse
 }
 
+// Inspect accepts an inspector function that has same arguments as the KV.Recurse
+func (mmRecurse *mKVMockRecurse) Inspect(f func(c1 Ctx, s1 string, q1 Query)) *mKVMockRecurse {
+	if mmRecurse.mock.inspectFuncRecurse != nil {
+		mmRecurse.mock.t.Fatalf("Inspect function is already set for KVMock.Recurse")
+	}
+
+	mmRecurse.mock.inspectFuncRecurse = f
+
+	return mmRecurse
+}
+
 // Return sets up results that will be returned by KV.Recurse
-func (mmRecurse *mKVMockRecurse) Return(saa1 [][2]string, err error) *KVMock {
+func (mmRecurse *mKVMockRecurse) Return(pa1 []Pair, err error) *KVMock {
 	if mmRecurse.mock.funcRecurse != nil {
 		mmRecurse.mock.t.Fatalf("KVMock.Recurse mock is already set by Set")
 	}
@@ -930,12 +1011,12 @@ func (mmRecurse *mKVMockRecurse) Return(saa1 [][2]string, err error) *KVMock {
 	if mmRecurse.defaultExpectation == nil {
 		mmRecurse.defaultExpectation = &KVMockRecurseExpectation{mock: mmRecurse.mock}
 	}
-	mmRecurse.defaultExpectation.results = &KVMockRecurseResults{saa1, err}
+	mmRecurse.defaultExpectation.results = &KVMockRecurseResults{pa1, err}
 	return mmRecurse.mock
 }
 
 //Set uses given function f to mock the KV.Recurse method
-func (mmRecurse *mKVMockRecurse) Set(f func(dc string, path string) (saa1 [][2]string, err error)) *KVMock {
+func (mmRecurse *mKVMockRecurse) Set(f func(c1 Ctx, s1 string, q1 Query) (pa1 []Pair, err error)) *KVMock {
 	if mmRecurse.defaultExpectation != nil {
 		mmRecurse.mock.t.Fatalf("Default expectation is already set for the KV.Recurse method")
 	}
@@ -950,62 +1031,66 @@ func (mmRecurse *mKVMockRecurse) Set(f func(dc string, path string) (saa1 [][2]s
 
 // When sets expectation for the KV.Recurse which will trigger the result defined by the following
 // Then helper
-func (mmRecurse *mKVMockRecurse) When(dc string, path string) *KVMockRecurseExpectation {
+func (mmRecurse *mKVMockRecurse) When(c1 Ctx, s1 string, q1 Query) *KVMockRecurseExpectation {
 	if mmRecurse.mock.funcRecurse != nil {
 		mmRecurse.mock.t.Fatalf("KVMock.Recurse mock is already set by Set")
 	}
 
 	expectation := &KVMockRecurseExpectation{
 		mock:   mmRecurse.mock,
-		params: &KVMockRecurseParams{dc, path},
+		params: &KVMockRecurseParams{c1, s1, q1},
 	}
 	mmRecurse.expectations = append(mmRecurse.expectations, expectation)
 	return expectation
 }
 
 // Then sets up KV.Recurse return parameters for the expectation previously defined by the When method
-func (e *KVMockRecurseExpectation) Then(saa1 [][2]string, err error) *KVMock {
-	e.results = &KVMockRecurseResults{saa1, err}
+func (e *KVMockRecurseExpectation) Then(pa1 []Pair, err error) *KVMock {
+	e.results = &KVMockRecurseResults{pa1, err}
 	return e.mock
 }
 
 // Recurse implements KV
-func (mmRecurse *KVMock) Recurse(dc string, path string) (saa1 [][2]string, err error) {
+func (mmRecurse *KVMock) Recurse(c1 Ctx, s1 string, q1 Query) (pa1 []Pair, err error) {
 	mm_atomic.AddUint64(&mmRecurse.beforeRecurseCounter, 1)
 	defer mm_atomic.AddUint64(&mmRecurse.afterRecurseCounter, 1)
 
-	params := &KVMockRecurseParams{dc, path}
+	if mmRecurse.inspectFuncRecurse != nil {
+		mmRecurse.inspectFuncRecurse(c1, s1, q1)
+	}
+
+	mm_params := &KVMockRecurseParams{c1, s1, q1}
 
 	// Record call args
 	mmRecurse.RecurseMock.mutex.Lock()
-	mmRecurse.RecurseMock.callArgs = append(mmRecurse.RecurseMock.callArgs, params)
+	mmRecurse.RecurseMock.callArgs = append(mmRecurse.RecurseMock.callArgs, mm_params)
 	mmRecurse.RecurseMock.mutex.Unlock()
 
 	for _, e := range mmRecurse.RecurseMock.expectations {
-		if minimock.Equal(e.params, params) {
+		if minimock.Equal(e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
-			return e.results.saa1, e.results.err
+			return e.results.pa1, e.results.err
 		}
 	}
 
 	if mmRecurse.RecurseMock.defaultExpectation != nil {
 		mm_atomic.AddUint64(&mmRecurse.RecurseMock.defaultExpectation.Counter, 1)
-		want := mmRecurse.RecurseMock.defaultExpectation.params
-		got := KVMockRecurseParams{dc, path}
-		if want != nil && !minimock.Equal(*want, got) {
-			mmRecurse.t.Errorf("KVMock.Recurse got unexpected parameters, want: %#v, got: %#v%s\n", *want, got, minimock.Diff(*want, got))
+		mm_want := mmRecurse.RecurseMock.defaultExpectation.params
+		mm_got := KVMockRecurseParams{c1, s1, q1}
+		if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmRecurse.t.Errorf("KVMock.Recurse got unexpected parameters, want: %#v, got: %#v%s\n", *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		results := mmRecurse.RecurseMock.defaultExpectation.results
-		if results == nil {
+		mm_results := mmRecurse.RecurseMock.defaultExpectation.results
+		if mm_results == nil {
 			mmRecurse.t.Fatal("No results are set for the KVMock.Recurse")
 		}
-		return (*results).saa1, (*results).err
+		return (*mm_results).pa1, (*mm_results).err
 	}
 	if mmRecurse.funcRecurse != nil {
-		return mmRecurse.funcRecurse(dc, path)
+		return mmRecurse.funcRecurse(c1, s1, q1)
 	}
-	mmRecurse.t.Fatalf("Unexpected call to KVMock.Recurse. %v %v", dc, path)
+	mmRecurse.t.Fatalf("Unexpected call to KVMock.Recurse. %v %v %v", c1, s1, q1)
 	return
 }
 

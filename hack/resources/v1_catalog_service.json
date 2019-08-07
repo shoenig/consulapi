@@ -1,0 +1,62 @@
+[
+  {
+    "ID": "674036a8-5c74-1d67-368b-2fb3b7f3893d",
+    "Node": "dc1-node1",
+    "Address": "10.3.0.19",
+    "Datacenter": "dc1",
+    "TaggedAddresses": {
+      "lan": "10.3.0.19",
+      "wan": "10.3.0.19"
+    },
+    "NodeMeta": {
+      "consul-network-segment": ""
+    },
+    "ServiceKind": "",
+    "ServiceID": "myapp",
+    "ServiceName": "myapp",
+    "ServiceTags": [],
+    "ServiceAddress": "",
+    "ServiceWeights": {
+      "Passing": 1,
+      "Warning": 1
+    },
+    "ServiceMeta": {},
+    "ServicePort": 29539,
+    "ServiceEnableTagOverride": false,
+    "ServiceProxyDestination": "",
+    "ServiceProxy": {},
+    "ServiceConnect": {},
+    "CreateIndex": 521309478,
+    "ModifyIndex": 521309478
+  },
+  {
+    "ID": "9a5d7c9a-4b8b-b3d6-3e70-124a9c8f49be",
+    "Node": "dc1-node1",
+    "Address": "10.3.0.8",
+    "Datacenter": "dc1",
+    "TaggedAddresses": {
+    "lan": "10.3.0.8",
+    "wan": "10.3.0.8"
+    },
+    "NodeMeta": {
+    "consul-network-segment": ""
+    },
+    "ServiceKind": "",
+    "ServiceID": "myapp",
+    "ServiceName": "myapp",
+    "ServiceTags": [],
+    "ServiceAddress": "",
+    "ServiceWeights": {
+    "Passing": 1,
+    "Warning": 1
+    },
+    "ServiceMeta": {},
+    "ServicePort": 29539,
+    "ServiceEnableTagOverride": false,
+    "ServiceProxyDestination": "",
+    "ServiceProxy": {},
+    "ServiceConnect": {},
+    "CreateIndex": 531853306,
+    "ModifyIndex": 531853306
+  }
+]

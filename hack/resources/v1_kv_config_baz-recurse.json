@@ -1,0 +1,66 @@
+[
+  {
+    "LockIndex": 0,
+    "Key": "config/baz",
+    "Flags": 0,
+    "Value": null,
+    "CreateIndex": 1081501,
+    "ModifyIndex": 1081501
+  },
+  {
+    "LockIndex": 0,
+    "Key": "config/baz/",
+    "Flags": 0,
+    "Value": null,
+    "CreateIndex": 964746,
+    "ModifyIndex": 964746
+  },
+  {
+    "LockIndex": 0,
+    "Key": "config/baz/bar",
+    "Flags": 0,
+    "Value": "bXlWYWx1ZQ==",
+    "CreateIndex": 1080093,
+    "ModifyIndex": 1080170
+  },
+  {
+    "LockIndex": 0,
+    "Key": "config/baz/cat",
+    "Flags": 0,
+    "Value": "a2l0dGVu",
+    "CreateIndex": 1080421,
+    "ModifyIndex": 1080421
+  },
+  {
+    "LockIndex": 0,
+    "Key": "config/baz/sub/",
+    "Flags": 0,
+    "Value": null,
+    "CreateIndex": 1081482,
+    "ModifyIndex": 1081482
+  },
+  {
+    "LockIndex": 0,
+    "Key": "config/baz/sub/more/",
+    "Flags": 0,
+    "Value": null,
+    "CreateIndex": 1081486,
+    "ModifyIndex": 1081486
+  },
+  {
+    "LockIndex": 0,
+    "Key": "config/baz/sub/more/aaa",
+    "Flags": 0,
+    "Value": "YmJi",
+    "CreateIndex": 1081490,
+    "ModifyIndex": 1081490
+  },
+  {
+    "LockIndex": 0,
+    "Key": "config/baz/sub/www",
+    "Flags": 0,
+    "Value": "c2Rm",
+    "CreateIndex": 1081496,
+    "ModifyIndex": 1081496
+  }
+]

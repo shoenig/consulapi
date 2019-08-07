@@ -1,25 +1,11 @@
 package consulapi
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
-
-// Running these tests requires running the consul defined in the hack/docker-compose.yml file.
-// With docker and docker-compose installed, simply run "docker-compose up" in the hack directory
-// to get up and running.
-
-func cleanup(t *testing.T, client Client) {
-	t.Log("-- cleaning up consul key space --")
-	keys, err := client.Keys("", "/")
-	require.NoError(t, err)
-
-	for _, key := range keys {
-		err := client.Delete("", key)
-		require.NoError(t, err)
-	}
-}
 
 func Test_fixup(t *testing.T) {
 	tests := []struct {
@@ -38,4 +24,195 @@ func Test_fixup(t *testing.T) {
 		t.Log("fixed", fixed)
 		require.Equal(t, test.exp, fixed)
 	}
+}
+
+func Test_param(t *testing.T) {
+	k, v := "k", "v"
+	pair := param(k, v)
+	require.Equal(t, "k", pair[0])
+	require.Equal(t, "v", pair[1])
+}
+
+func Test_RequestError_StatusCode(t *testing.T) {
+	re := RequestError{
+		statusCode: http.StatusTeapot,
+	}
+
+	code := re.StatusCode()
+	require.Equal(t, http.StatusTeapot, code)
+}
+
+func Test_Client_New_defaults(t *testing.T) {
+	c := New(ClientOptions{
+		// empty, use defaults
+	}).(*client)
+
+	require.Equal(t, "http://localhost:8500", c.address)
+	require.Equal(t, "", c.token)
+	require.NotNil(t, c.httpClient)
+	require.NotNil(t, c.log)
+}
+
+type myFoo struct {
+	Foo string `json:"foo"`
+}
+
+func Test_Client_get(t *testing.T) {
+	ctx, ts, c := testClient(&responder{
+		t:         t,
+		code:      http.StatusOK,
+		body:      load(t, "test_myfoo.json"),
+		hasPath:   "/test/arbitrary",
+		hasMethod: http.MethodGet,
+		hasQuery:  map[string][]string{},
+	})
+	defer ts.Close()
+
+	var value myFoo
+	err := c.(*client).get(ctx, "/test/arbitrary", &value)
+	require.NoError(t, err)
+	require.Equal(t, "bar", value.Foo)
+}
+
+func Test_Client_get_bad_request(t *testing.T) {
+	ctx, ts, c := testClient(&responder{
+		t:         t,
+		code:      http.StatusOK,
+		body:      load(t, "test_myfoo.json"),
+		hasPath:   "/test/arbitrary",
+		hasMethod: http.MethodGet,
+	})
+	defer ts.Close()
+
+	var value myFoo
+	err := c.(*client).get(ctx, "not_a_path", &value)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid URL port")
+}
+
+func Test_Client_get_bad_reply(t *testing.T) {
+	ctx, ts, c := testClient(&responder{
+		t:         t,
+		code:      http.StatusOK,
+		body:      "",
+		hasPath:   "/test/arbitrary",
+		hasMethod: http.MethodGet,
+	})
+	defer ts.Close()
+
+	var value myFoo
+	err := c.(*client).get(ctx, "/test/arbitrary", &value)
+	require.EqualError(t, err, "EOF")
+}
+
+func Test_Client_get_bad_response(t *testing.T) {
+	ctx, ts, c := testClient(&responder{
+		t:         t,
+		code:      http.StatusTeapot,
+		body:      load(t, "test_myfoo.json"),
+		hasPath:   "/test/arbitrary",
+		hasMethod: http.MethodGet,
+		hasQuery:  map[string][]string{},
+	})
+	defer ts.Close()
+
+	var value myFoo
+	err := c.(*client).get(ctx, "/test/arbitrary", &value)
+	require.EqualError(t, err, "status code (418)")
+}
+
+const (
+	egBody = `{"a":1}`
+)
+
+func Test_Client_put(t *testing.T) {
+	ctx, ts, c := testClient(&responder{
+		t:         t,
+		code:      http.StatusOK,
+		body:      load(t, "test_myfoo.json"),
+		hasPath:   "/test/arbitrary",
+		hasMethod: http.MethodPut,
+		hasBody:   egBody,
+	})
+	defer ts.Close()
+
+	var value myFoo
+	err := c.(*client).put(ctx, "/test/arbitrary", egBody, &value)
+	require.NoError(t, err)
+	require.Equal(t, "bar", value.Foo)
+}
+
+func Test_Client_put_bad_request(t *testing.T) {
+	ctx, ts, c := testClient(&responder{
+		t:         t,
+		code:      http.StatusOK,
+		body:      "",
+		hasPath:   "/test/arbitrary",
+		hasMethod: http.MethodPut,
+	})
+	defer ts.Close()
+
+	var value myFoo
+	err := c.(*client).put(ctx, "not_a_path", egBody, &value)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid URL port")
+}
+
+func Test_Client_put_bad_response(t *testing.T) {
+	ctx, ts, c := testClient(&responder{
+		t:         t,
+		code:      http.StatusTeapot,
+		body:      load(t, "test_myfoo.json"),
+		hasPath:   "/test/arbitrary",
+		hasMethod: http.MethodPut,
+		hasBody:   egBody,
+	})
+	defer ts.Close()
+
+	var value myFoo
+	err := c.(*client).put(ctx, "/test/arbitrary", egBody, &value)
+	require.EqualError(t, err, "status code (418)")
+}
+
+func Test_Client_delete(t *testing.T) {
+	ctx, ts, c := testClient(&responder{
+		t:         t,
+		code:      http.StatusOK,
+		body:      "",
+		hasPath:   "/test/arbitrary",
+		hasMethod: http.MethodDelete,
+	})
+	defer ts.Close()
+
+	err := c.(*client).delete(ctx, "/test/arbitrary")
+	require.NoError(t, err)
+}
+
+func Test_Client_delete_bad_request(t *testing.T) {
+	ctx, ts, c := testClient(&responder{
+		t:         t,
+		code:      http.StatusOK,
+		body:      "",
+		hasPath:   "/test/arbitrary",
+		hasMethod: http.MethodDelete,
+	})
+	defer ts.Close()
+
+	err := c.(*client).delete(ctx, "not_a_path")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid URL port")
+}
+
+func Test_Client_delete_bad_response(t *testing.T) {
+	ctx, ts, c := testClient(&responder{
+		t:         t,
+		code:      http.StatusTeapot,
+		body:      "malfunction",
+		hasPath:   "/test/arbitrary",
+		hasMethod: http.MethodDelete,
+	})
+	defer ts.Close()
+
+	err := c.(*client).delete(ctx, "/test/arbitrary")
+	require.EqualError(t, err, "status code (418)")
 }
