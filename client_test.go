@@ -87,7 +87,7 @@ func Test_Client_get_bad_request(t *testing.T) {
 	var value myFoo
 	err := c.(*client).get(ctx, "not_a_path", &value)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid URL port")
+	require.Contains(t, err.Error(), "invalid port")
 }
 
 func Test_Client_get_bad_reply(t *testing.T) {
@@ -155,7 +155,7 @@ func Test_Client_put_bad_request(t *testing.T) {
 	var value myFoo
 	err := c.(*client).put(ctx, "not_a_path", egBody, &value)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid URL port")
+	require.Contains(t, err.Error(), "invalid port")
 }
 
 func Test_Client_put_bad_response(t *testing.T) {
@@ -200,7 +200,7 @@ func Test_Client_delete_bad_request(t *testing.T) {
 
 	err := c.(*client).delete(ctx, "not_a_path")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid URL port")
+	require.Contains(t, err.Error(), "invalid port")
 }
 
 func Test_Client_delete_bad_response(t *testing.T) {

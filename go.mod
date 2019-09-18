@@ -9,4 +9,4 @@ require (
 	gophers.dev/pkgs/loggy v0.2.0
 )
 
-go 1.13
+go 1.12
