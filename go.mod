@@ -1,5 +1,7 @@
 module gophers.dev/pkgs/consulapi
 
+go 1.16
+
 require (
 	github.com/gojuno/minimock/v3 v3.0.4
 	github.com/hashicorp/go-cleanhttp v0.5.1
@@ -8,5 +10,3 @@ require (
 	gophers.dev/pkgs/ignore v0.2.0
 	gophers.dev/pkgs/loggy v0.2.0
 )
-
-go 1.12
