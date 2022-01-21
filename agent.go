@@ -17,55 +17,55 @@ type Agent interface {
 	// consul service.
 	//
 	// https://www.consul.io/api/agent.html#read-configuration
-	Self(ctx Ctx) (AgentInfo, error)
+	Self(opts ...Optional) (*AgentInfo, *State)
 
 	// Members reports what instances of the consul service belong to the
 	// consul cluster. If wan is true, the
 	//
 	// https://www.consul.io/api/agent.html#list-members
-	Members(ctx Ctx, wan bool) ([]AgentInfo, error)
+	Members(wan bool, opts ...Optional) ([]AgentInfo, *State)
 
 	// Reload the consul service config files.
 	//
 	// https://www.consul.io/api/agent.html#reload-agent
-	Reload(ctx Ctx) error
+	Reload(opts ...Optional) error
 
 	// MaintenanceMode puts a consul instance into a mode where the node is
 	// marked unavailable, and will not be present in DNS or API queries.
 	//
 	// https://www.consul.io/api/agent.html#enable-maintenance-mode
-	MaintenanceMode(ctx Ctx, enabled bool, reason string) error
+	MaintenanceMode(enabled bool, reason string, opts ...Optional) error
 
 	// Metrics will report about the consul instance.
 	//
 	// https://www.consul.io/api/agent.html#view-metrics
-	Metrics(ctx Ctx) (Metrics, error)
+	Metrics(opts ...Optional) (Metrics, error)
 
 	// Join the consul instance with an existing consul cluster.
 	//
 	// https://www.consul.io/api/agent.html#join-agent
-	Join(ctx Ctx, address string, wan bool) error
+	Join(address string, wan bool, opts ...Optional) error
 
 	// Leave the consul cluster.
 	//
 	// https://www.consul.io/api/agent.html#graceful-leave-and-shutdown
-	Leave(ctx Ctx) error
+	Leave(opts ...Optional) error
 
 	// ForceLeave will purge the named node from the consul cluster.
 	//
 	// https://www.consul.io/api/agent.html#force-leave-and-shutdown
-	ForceLeave(ctx Ctx, node string) error
+	ForceLeave(node string, opts ...Optional) error
 
 	// SetACLToken will set the given kind of token to the value.
 	//
 	// https://www.consul.io/api/agent.html#update-acl-tokens
-	SetACLToken(ctx Ctx, kind, token string) error
+	SetACLToken(kind, token string, opts ...Optional) error
 
 	// Monitor(loglevel string) // log stream, maybe someday
 }
 
 // An assertions that client satisfies Agent
-var _ Agent = (*client)(nil)
+var _ Agent = (*ConsulClient)(nil)
 
 // An AgentInfo contains information about a particular
 // consul agent.
@@ -90,16 +90,14 @@ type selfResponse struct {
 	} `json:"Member"`
 }
 
-func (c *client) Self(ctx Ctx) (AgentInfo, error) {
-	rPath := fixup("/v1/agent/", "self")
-
+func (cc *ConsulClient) Self(opts ...Option) (*AgentInfo, *State) {
 	var response selfResponse
 
-	if err := c.get(ctx, rPath, &response); err != nil {
-		return AgentInfo{}, err
+	if err := cc.get("/v1/agent/self", &response, optional(opts...)); err != nil {
+		return nil, &State{Err: err}
 	}
 
-	return AgentInfo{
+	return &AgentInfo{
 		Name:    response.Config.NodeName,
 		Address: response.Member.Addr,
 		Port:    response.Member.Port,

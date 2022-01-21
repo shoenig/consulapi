@@ -1,4 +1,4 @@
-package consulapi // import "gophers.dev/pkgs/consulapi"
+package consulapi
 
 import (
 	"encoding/json"
@@ -7,101 +7,118 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
-	clean "github.com/hashicorp/go-cleanhttp"
-
+	"github.com/hashicorp/go-hclog"
 	"gophers.dev/pkgs/ignore"
-	"gophers.dev/pkgs/loggy"
 )
 
 const (
-	defaultAddress    = "http://localhost:8500"
-	defaultTimeout    = 10 * time.Second
-	consulTokenHeader = "X-Consul-Token"
+	defaultScheme = "http"
+	defaultHost   = "localhost"
+	defaultPort   = 8500
 )
 
 //go:generate go run github.com/gojuno/minimock/v3/cmd/minimock -g -i Client -s _mock.go
 
-// A Client is used to communicate with consul. The interface is composed of
-// other interfaces, which reflect the different categories of API supported by
-// the consul agent.
+// A Client is the abstraction of ConsulClient, a tool used to communicate with consul.
+// The interface is composed of other interfaces, which reflect the different categories
+// of API supported by the consul agent.
 type Client interface {
 	Agent
-	Catalog
-	KV
-	Session
-	Candidate
+	// Catalog
+	// KV
+	// Session
+	// Candidate
 }
 
-// ClientOptions are used to configure options of a client upon creation.
-type ClientOptions struct {
-	// Address (optional) of the consul agent to communicate with. This value
-	// will default to http://localhost:8500 if left unset. This is likely
-	// the desired value, as consul is designed to run with an agent on
-	// every node.
-	Address string
-
-	// Token (optional) will be used to authenticate requests to consul.
-	Token string
-
-	// HTTPClient (optional) is the underlying HTTP client to use for making
-	// requests to consul agents and servers. If not set, a default HTTP client
-	// is used with a default timeout of 10 seconds, and will keep connections
-	// open.
-	HTTPClient *http.Client
-
-	// Logger may be optionally configured as an output for trace level logging
-	// produced internally by the Client. This can be helpful for debugging logic
-	// errors in client code.
-	Logger loggy.Logger
+// ConsulClient is used to communicate with Consul.
+type ConsulClient struct {
+	scheme     string
+	host       string
+	port       int
+	userAgent  string
+	headers    http.Header
+	httpClient *http.Client
+	log        hclog.Logger
 }
 
-// RequestError exposes the status code of a http request error
-type RequestError struct {
-	statusCode int
+// ClientOption implements functional options for ConsulClient.
+type ClientOption func(*ConsulClient)
+
+func WithDefaultScheme(scheme string) ClientOption {
+	return func(c *ConsulClient) {
+		c.scheme = scheme
+	}
 }
 
-func (h *RequestError) Error() string {
-	return fmt.Sprintf("status code (%d)", h.statusCode)
+func WithDefaultHost(host string) ClientOption {
+	return func(c *ConsulClient) {
+		c.host = host
+	}
 }
 
-func (h *RequestError) StatusCode() int {
-	return h.statusCode
+func WithDefaultPort(port int) ClientOption {
+	return func(c *ConsulClient) {
+		c.port = port
+	}
+}
+
+func WithHTTPClient(httpClient *http.Client) ClientOption {
+	return func(c *ConsulClient) {
+		c.httpClient = httpClient
+	}
+}
+
+func WithLogger(log hclog.Logger) ClientOption {
+	return func(c *ConsulClient) {
+		c.log = log
+	}
+}
+
+func WithUserAgent(ua string) ClientOption {
+	return func(c *ConsulClient) {
+		c.userAgent = ua
+	}
+}
+
+func WithHeaders(h http.Header) ClientOption {
+	return func(c *ConsulClient) {
+		c.headers = h
+	}
+}
+
+const (
+	headerContentType = "Content-Type"
+	mimeJSON          = "application/json"
+
+	headerUserAgent = "User-Agent"
+	userAgent       = "consulapi/v2"
+
+	headerConsulToken = "X-Consul-Token"
+)
+
+func defaultHeaders() http.Header {
+	var h http.Header
+	h.Set(headerContentType, mimeJSON)
+	h.Set(headerUserAgent, userAgent)
+	return h
 }
 
 // New creates a new Client that will use the provided ClientOptions for
 // making requests to a configured consul agent.
-func New(opts ClientOptions) Client {
-	address := opts.Address
-	if address == "" {
-		address = defaultAddress
+func New(opts ...ClientOption) Client {
+	c := &ConsulClient{
+		scheme:     defaultScheme,
+		host:       defaultHost,
+		port:       defaultPort,
+		headers:    defaultHeaders(),
+		httpClient: http.DefaultClient,
+		log:        hclog.NewNullLogger(),
 	}
-
-	httpClient := opts.HTTPClient
-	if httpClient == nil {
-		httpClient = clean.DefaultPooledClient()
-		httpClient.Timeout = defaultTimeout
+	for _, opt := range opts {
+		opt(c)
 	}
-
-	logger := opts.Logger
-	if logger == nil {
-		logger = loggy.Discard()
-	}
-
-	return &client{
-		address:    address,
-		token:      opts.Token,
-		httpClient: httpClient,
-		log:        logger,
-	}
-}
-
-type client struct {
-	address    string
-	token      string
-	httpClient *http.Client
-	log        loggy.Logger
+	return c
 }
 
 // params are url param kv pairs
@@ -110,9 +127,9 @@ func fixup(prefix, path string, params ...[2]string) string {
 	path = strings.TrimPrefix(path, "/")
 
 	values := make(url.Values)
-	for _, param := range params {
-		if param[1] != "" {
-			values.Add(param[0], param[1])
+	for _, parameter := range params {
+		if parameter[1] != "" {
+			values.Add(parameter[0], parameter[1])
 		}
 	}
 
@@ -130,26 +147,42 @@ func param(key, value string) [2]string {
 	return [2]string{key, value}
 }
 
-func (c *client) newRequest(ctx Ctx, method, fullURL string, body io.Reader) (*http.Request, error) {
-	request, err := http.NewRequest(method, fullURL, body)
+func (cc *ConsulClient) newRequest(ctx Ctx, method, uri, token string, body io.Reader) (*http.Request, error) {
+	request, err := http.NewRequest(method, uri, body)
 	if err != nil {
 		return nil, err
 	}
 	rCtx := request.WithContext(ctx)
-	c.maybeSetToken(rCtx)
-	c.setHeaders(rCtx)
+	cc.setHeaders(rCtx, token)
 	return rCtx, nil
 }
 
-func (c *client) get(ctx Ctx, path string, i interface{}) error {
-	completeURL := c.address + path
+func (cc *ConsulClient) get(path, i interface{}, opts *Optional) error {
+	// completeURL := cc.address + path
+	// create url
 
-	request, err := c.newRequest(ctx, http.MethodGet, completeURL, nil)
+	host := cc.address
+	if opts.host != "" {
+		host = opts.host
+	}
+
+	u := url.URL{
+		Scheme:      "",
+		Host:        host,
+		Path:        "",
+		RawPath:     "",
+		ForceQuery:  false,
+		RawQuery:    "",
+		Fragment:    "",
+		RawFragment: "",
+	}
+
+	request, err := cc.newRequest(ctx, http.MethodGet, completeURL, token, nil)
 	if err != nil {
 		return err
 	}
 
-	response, err := c.httpClient.Do(request)
+	response, err := cc.httpClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -162,16 +195,16 @@ func (c *client) get(ctx Ctx, path string, i interface{}) error {
 	return json.NewDecoder(response.Body).Decode(i)
 }
 
-func (c *client) put(ctx Ctx, path, body string, i interface{}) error {
-	completeURL := c.address + path
+func (cc *ConsulClient) put(ctx Ctx, path, token, body string, i interface{}) error {
+	completeURL := cc.address + path
 
 	r := strings.NewReader(body)
-	request, err := c.newRequest(ctx, http.MethodPut, completeURL, r)
+	request, err := cc.newRequest(ctx, http.MethodPut, completeURL, token, r)
 	if err != nil {
 		return err
 	}
 
-	response, err := c.httpClient.Do(request)
+	response, err := cc.httpClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -188,15 +221,15 @@ func (c *client) put(ctx Ctx, path, body string, i interface{}) error {
 	return nil
 }
 
-func (c *client) delete(ctx Ctx, path string) error {
-	completeURL := c.address + path
+func (cc *ConsulClient) delete(ctx Ctx, path, token string) error {
+	completeURL := cc.address + path
 
-	request, err := c.newRequest(ctx, http.MethodDelete, completeURL, nil)
+	request, err := cc.newRequest(ctx, http.MethodDelete, completeURL, token, nil)
 	if err != nil {
 		return err
 	}
 
-	response, err := c.httpClient.Do(request)
+	response, err := cc.httpClient.Do(request)
 	if err != nil {
 		return err
 	}
@@ -209,20 +242,33 @@ func (c *client) delete(ctx Ctx, path string) error {
 	return nil
 }
 
-func (c *client) maybeSetToken(request *http.Request) {
-	if c.token != "" {
-		request.Header.Set(consulTokenHeader, c.token)
+func (cc *ConsulClient) setHeaders(request *http.Request, token string) {
+	// set common default headers
+	request.Header.Set(headerContentType, mimeJSON)
+	request.Header.Set(headerUserAgent, userAgent)
+
+	// set acl token header if it exists
+	if token != "" {
+		request.Header.Set(consulTokenHeader, token)
+	}
+
+	// override using specified headers
+	for k, values := range cc.headers {
+		for _, v := range values {
+			request.Header.Add(k, v)
+		}
 	}
 }
 
-const (
-	headerContentType = "Content-Type"
-	headerUserAgent   = "User-Agent"
-	mimeJSON          = "application/json"
-	userAgent         = "consulapi/1.0"
-)
+// RequestError exposes the status code of a http request error
+type RequestError struct {
+	statusCode int
+}
 
-func (c *client) setHeaders(request *http.Request) {
-	request.Header.Set(headerContentType, mimeJSON)
-	request.Header.Set(headerUserAgent, userAgent)
+func (h *RequestError) Error() string {
+	return fmt.Sprintf("status code (%d)", h.statusCode)
+}
+
+func (h *RequestError) StatusCode() int {
+	return h.statusCode
 }
